@@ -1,0 +1,99 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=CO, ST=ST, L=CITY, O=ORG, OU=ORG-UNIT, CN=COMMON-NAME/name=NAME/emailAddress=EMAIL
+        Validity
+            Not Before: May  8 07:29:22 2025 GMT
+            Not After : May  6 07:29:22 2035 GMT
+        Subject: C=US, ST=CA, L=SanFrancisco, O=Fort-Funston, OU=MyOrganizationalUnit, CN=server/name=EasyRSA/emailAddress=me@myhost.mydomain
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:c9:2b:13:62:58:4c:75:28:16:f3:82:29:49:0a:
+                    03:9b:82:cc:d8:69:19:d8:4b:bc:03:29:96:f7:b7:
+                    69:42:ad:83:bb:9e:86:96:8a:a0:75:4c:16:14:68:
+                    15:39:5f:22:b6:9c:6d:94:45:5f:54:52:f9:e3:b1:
+                    37:eb:94:76:58:bf:28:86:83:79:89:ee:e2:30:e6:
+                    b0:10:66:21:eb:bf:b6:2c:ff:c2:80:15:67:aa:2d:
+                    74:60:1d:8c:e7:c0:f6:e3:a6:aa:1b:82:e2:38:60:
+                    00:ae:78:2e:05:f1:2e:d7:f2:bf:ff:79:9c:13:dd:
+                    45:0e:fb:3a:e0:60:12:63:70:bb:c2:ee:7c:c1:a6:
+                    db:b1:fc:50:25:db:d0:3d:05:18:90:a2:f0:94:e5:
+                    9a:fa:a9:2e:e3:e1:04:f0:38:88:55:a9:7d:52:0b:
+                    0c:06:c1:90:37:46:b2:16:50:9e:21:e0:c9:d6:9d:
+                    6a:23:ef:43:d1:f5:e2:65:c9:a3:2f:a2:70:58:5a:
+                    4a:88:5f:2b:79:05:2e:83:4e:0a:48:37:fb:c2:49:
+                    00:55:1a:0e:54:84:af:0e:92:a1:26:fb:12:7e:b1:
+                    e0:18:c5:82:df:fa:68:5a:f6:87:24:86:ee:21:a7:
+                    b9:f2:bf:59:d2:b4:83:d2:10:15:e5:4d:af:6d:4f:
+                    ea:9f
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Cert Type: 
+                SSL Server
+            Netscape Comment: 
+                Easy-RSA Generated Server Certificate
+            X509v3 Subject Key Identifier: 
+                3E:42:0E:B9:41:4F:48:62:F3:C3:F4:D0:62:19:49:4D:24:FF:E2:52
+            X509v3 Authority Key Identifier: 
+                keyid:94:9D:85:26:F1:AA:F6:42:34:66:79:F9:7B:26:8C:0B:1F:37:49:F4
+                DirName:/C=CO/ST=ST/L=CITY/O=ORG/OU=ORG-UNIT/CN=COMMON-NAME/name=NAME/emailAddress=EMAIL
+                serial:05:FB:D8:FB:96:B0:4F:12:E4:C0:45:D2:34:2F:CF:4D:D2:AE:FE:6E
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication
+            X509v3 Key Usage: 
+                Digital Signature, Key Encipherment
+            X509v3 Subject Alternative Name: 
+                DNS:server
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        a6:83:65:07:e3:7d:41:3c:e4:2a:dc:7b:8a:e0:ab:fd:7a:56:
+        38:b4:ad:99:c4:b5:06:bd:fc:23:59:5a:47:ac:23:68:08:02:
+        ef:8c:62:e1:14:16:ad:ec:3e:de:63:bb:9f:b9:20:39:43:bc:
+        9f:ac:d7:6a:bb:75:21:40:4c:ee:56:3d:dd:c9:18:d7:c6:07:
+        f8:59:03:5b:0e:59:33:d8:55:90:0c:23:3a:bc:3e:82:b1:09:
+        ad:78:c9:21:94:44:38:e1:2b:2f:3f:ab:b9:77:d7:fd:06:47:
+        fc:34:ac:c7:a0:33:85:ee:16:db:d7:73:2c:eb:60:69:c2:f8:
+        19:09:0c:05:f7:66:92:2e:5a:24:6c:e1:6f:07:36:4d:eb:60:
+        0a:48:b9:51:1e:31:9a:40:61:61:b2:6b:67:9e:c8:88:ee:77:
+        45:db:e4:f3:85:90:ae:93:21:a2:95:bb:a5:39:47:13:6d:6d:
+        ce:a4:62:50:8f:8e:b9:77:42:d3:0c:b2:f5:99:be:e5:19:c6:
+        35:a0:9b:f7:39:94:b7:ea:c1:17:a8:2d:7a:42:fa:17:6c:9a:
+        b0:08:69:4e:e4:ab:75:d9:9b:60:b1:de:28:68:a3:2c:85:50:
+        16:5e:cd:85:8a:1e:c0:51:78:52:70:d6:92:93:c2:7f:b3:36:
+        3c:a0:c8:c6
+-----BEGIN CERTIFICATE-----
+MIIFJTCCBA2gAwIBAgIBATANBgkqhkiG9w0BAQsFADCBhTELMAkGA1UEBhMCQ08x
+CzAJBgNVBAgTAlNUMQ0wCwYDVQQHEwRDSVRZMQwwCgYDVQQKEwNPUkcxETAPBgNV
+BAsTCE9SRy1VTklUMRQwEgYDVQQDEwtDT01NT04tTkFNRTENMAsGA1UEKRMETkFN
+RTEUMBIGCSqGSIb3DQEJARYFRU1BSUwwHhcNMjUwNTA4MDcyOTIyWhcNMzUwNTA2
+MDcyOTIyWjCBrTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRUwEwYDVQQHEwxT
+YW5GcmFuY2lzY28xFTATBgNVBAoTDEZvcnQtRnVuc3RvbjEdMBsGA1UECxMUTXlP
+cmdhbml6YXRpb25hbFVuaXQxDzANBgNVBAMTBnNlcnZlcjEQMA4GA1UEKRMHRWFz
+eVJTQTEhMB8GCSqGSIb3DQEJARYSbWVAbXlob3N0Lm15ZG9tYWluMIIBIjANBgkq
+hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAySsTYlhMdSgW84IpSQoDm4LM2GkZ2Eu8
+AymW97dpQq2Du56GloqgdUwWFGgVOV8itpxtlEVfVFL547E365R2WL8ohoN5ie7i
+MOawEGYh67+2LP/CgBVnqi10YB2M58D246aqG4LiOGAArnguBfEu1/K//3mcE91F
+Dvs64GASY3C7wu58wabbsfxQJdvQPQUYkKLwlOWa+qku4+EE8DiIVal9UgsMBsGQ
+N0ayFlCeIeDJ1p1qI+9D0fXiZcmjL6JwWFpKiF8reQUug04KSDf7wkkAVRoOVISv
+DpKhJvsSfrHgGMWC3/poWvaHJIbuIae58r9Z0rSD0hAV5U2vbU/qnwIDAQABo4IB
+dDCCAXAwCQYDVR0TBAIwADARBglghkgBhvhCAQEEBAMCBkAwNAYJYIZIAYb4QgEN
+BCcWJUVhc3ktUlNBIEdlbmVyYXRlZCBTZXJ2ZXIgQ2VydGlmaWNhdGUwHQYDVR0O
+BBYEFD5CDrlBT0hi88P00GIZSU0k/+JSMIHFBgNVHSMEgb0wgbqAFJSdhSbxqvZC
+NGZ5+XsmjAsfN0n0oYGLpIGIMIGFMQswCQYDVQQGEwJDTzELMAkGA1UECBMCU1Qx
+DTALBgNVBAcTBENJVFkxDDAKBgNVBAoTA09SRzERMA8GA1UECxMIT1JHLVVOSVQx
+FDASBgNVBAMTC0NPTU1PTi1OQU1FMQ0wCwYDVQQpEwROQU1FMRQwEgYJKoZIhvcN
+AQkBFgVFTUFJTIIUBfvY+5awTxLkwEXSNC/PTdKu/m4wEwYDVR0lBAwwCgYIKwYB
+BQUHAwEwCwYDVR0PBAQDAgWgMBEGA1UdEQQKMAiCBnNlcnZlcjANBgkqhkiG9w0B
+AQsFAAOCAQEApoNlB+N9QTzkKtx7iuCr/XpWOLStmcS1Br38I1laR6wjaAgC74xi
+4RQWrew+3mO7n7kgOUO8n6zXart1IUBM7lY93ckY18YH+FkDWw5ZM9hVkAwjOrw+
+grEJrXjJIZREOOErLz+ruXfX/QZH/DSsx6Azhe4W29dzLOtgacL4GQkMBfdmki5a
+JGzhbwc2TetgCki5UR4xmkBhYbJrZ57IiO53Rdvk84WQrpMhopW7pTlHE21tzqRi
+UI+OuXdC0wyy9Zm+5RnGNaCb9zmUt+rBF6gtekL6F2yasAhpTuSrddmbYLHeKGij
+LIVQFl7NhYoewFF4UnDWkpPCf7M2PKDIxg==
+-----END CERTIFICATE-----
