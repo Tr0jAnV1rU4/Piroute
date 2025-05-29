@@ -1,0 +1,13 @@
+[Unit]
+Description=Firewalla API
+After=network.target
+
+[Service]
+User=pi
+Restart=always
+WorkingDirectory=/home/pi/firewalla/api
+ExecStart=/bin/bash -c '/home/pi/firewalla/scripts/start_service.sh FireApi 2>&1 | tee -a /home/pi/.forever/api.log &>/dev/null'
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target

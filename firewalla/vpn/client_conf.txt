@@ -1,0 +1,2 @@
+#comp-lzo no
+#push "comp-lzo no"

@@ -1,0 +1,459 @@
+#!/bin/bash -
+#
+#    Copyright 2017-2023 Firewalla Inc.
+#
+#    This program is free software: you can redistribute it and/or  modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+#  When this scirpt is started, we are guranteed to have a stable network
+
+logger "MAIN-START STARTED $(date)"
+
+: ${FIREWALLA_HOME:=/home/pi/firewalla}
+source ${FIREWALLA_HOME}/platform/platform.sh
+: ${OVERLAY_RESET_ON_BOOT:=true}
+
+heartbeatLED
+
+: ${PI_HOME:=/home/pi}
+MGIT=$(PATH=$PI_HOME/scripts:$FIREWALLA_HOME/scripts; /usr/bin/which mgit||echo git)
+
+# use github to pull node modules to ~/.node_modules
+export FIREWALLA_NODE_MODULES_MODE=GIT
+
+NODE_MODULE_REPO=$(get_node_modules_url)
+logger "Node module repo: $NODE_MODULE_REPO"
+
+export NODE_PATH=~/.node_modules:$NODE_PATH
+
+mkdir -p "$HOME/.firewalla"
+mkdir -p "$HOME/.firewalla/tmp"
+mkdir -p "$HOME/.firewalla/pubKeys"
+mkdir -p "$HOME/logs"
+sudo rm -r -f /tmp/*
+cd $FIREWALLA_HOME
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ $branch =~ release.* ]]; then
+  # record production branch in redis
+  redis-cli hset sys:config prod.branch $branch
+  export FWPRODUCTION=$branch
+fi
+
+CPU_PLATFORM=$(uname -m)
+
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+
+commit_before=$(git rev-parse HEAD)
+current_tag=$(git describe --tags)
+
+echo $commit_before > /tmp/REPO_HEAD
+echo $current_tag > /tmp/REPO_TAG
+echo $branch > /tmp/REPO_BRANCH
+
+# only submit diag in main_start when fully reboot (upgrade should NOT submit diag)
+test -z $NO_FIREKICK_RESTART && node $HOME/firewalla/scripts/diag_status.js --event "MAIN_START" --message "Main starting $branch $current_tag " &>/dev/null &
+
+timeout 15 $FIREWALLA_HOME/bin/node $HOME/firewalla/scripts/diag_hello.js &>/dev/null &
+
+function pre_main() {
+    logger "MAIN-START pre_main"
+    source $FIREWALLA_HOME/scripts/utils.sh
+    setup_folders
+
+    # add alias source to ~/.bashrc
+    if ! grep "source ~/firewalla/scripts/alias.sh" ~/.bashrc &>/dev/null; then
+      echo "source ~/firewalla/scripts/alias.sh" >> ~/.bashrc
+    fi
+}
+
+
+# function install_node8() {
+#   # install nvm
+#   curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+
+#   # install node 8.7.0
+#   source ~/.nvm/nvm.sh; source ~/.profile; source ~/.bashrc; nvm install 8.7.0
+
+#   # not start nvm in shell automatically
+#   sed -i 's/\(.*NVM_DIR.*\)/#\1/' ~/.bashrc
+# }
+
+# function use_right_node_modules() {
+#   if [[ $CPU_PLATFORM == "armv7l" && $branch == "master" ]]; then
+
+#     # if [[ ! -d ~/.nvm ]]; then
+#     #   install_node8
+#     # fi
+
+#     # make sure node_modules use the right repo
+#     cd ~/.node_modules
+#     NM_URL=$(git remote get-url origin)
+
+#     if [[ $NM_URL != "https://github.com/firewalla/fnm.node8.armv7l.git" ]]; then
+#       git remote remove origin
+#       git remote add origin https://github.com/firewalla/fnm.node8.armv7l.git
+#       git pull origin $branch
+#     fi
+
+#   fi
+#   return 0
+# }
+
+function record_latest_production_branch() {
+  if [[ $branch =~ release.* ]]; then
+    redis-cli set prod.branch $branch
+  fi
+}
+
+logger "MAIN-START Start Update Modules"
+
+function update_node_modules_link {
+  # only continue when there is ~/.node_modules/node_modules
+  NM_PATH="/home/pi/.node_modules/node_modules"
+
+  # ~/firewalla/node_modules => ~/.node_modules/node_modules
+  # keep name node_modules because its the default name for node to search node modulers in upper level folders
+  test -e $NM_PATH && sudo -u pi ln -sfn $NM_PATH $FIREWALLA_HOME/node_modules
+}
+
+function update_node_modules {
+  FW_NODE_MODULES_PATH=~/.node_modules
+  if [[ "x$FIREWALLA_NODE_MODULES_MODE" == "xGIT" ]]; then
+      sudo rm -f ~/.node_modules/.git/*.lock
+      if [[ ! -d $FW_NODE_MODULES_PATH ]]; then
+        cd
+        # try again if failed, in case network issue
+        git clone --recursive -b $branch --single-branch $NODE_MODULE_REPO $FW_NODE_MODULES_PATH || git clone --recursive -b $branch --single-branch $NODE_MODULE_REPO $FW_NODE_MODULES_PATH
+        cd - &>/dev/null
+      fi
+      REVISION_FILE=$FIREWALLA_HOME/scripts/NODE_MODULES_REVISION.${FIREWALLA_PLATFORM}
+
+      NODE_VERSION=$($FIREWALLA_HOME/bin/node -v)
+
+      RE_NODE4='^v4\..*$'
+      if [[ $NODE_VERSION =~ $RE_NODE4 ]]; then
+        REVISION_FILE=$FIREWALLA_HOME/scripts/NODE_MODULES_REVISION.${FIREWALLA_PLATFORM}.node4
+      fi
+
+
+      if [[ -d $FW_NODE_MODULES_PATH && -f $REVISION_FILE ]]; then
+        cd $FW_NODE_MODULES_PATH
+
+        modulesBranch=$(git rev-parse --abbrev-ref HEAD)
+        if [[ $branch != $modulesBranch ]]; then
+            logger "FIREWALLA: NODE MODULES BRANCH MISMATCH: $modulesBranch, NOW SWITCHING TO $branch..."
+            $MGIT remote set-branches origin $branch
+            $MGIT fetch origin $branch
+            $MGIT checkout $branch
+        fi
+
+        EXPECTED_REVISION=$(cat $REVISION_FILE)
+        CURRENT_REVISION=$(git log | head -n 1 | awk '{print $2}')
+
+        cd $FW_NODE_MODULES_PATH
+
+        logger "MAIN-START CHECKING MODULE STATUS $(date)"
+        if [[ `git status -uno --porcelain` ]]; then
+          NODE_MODULE_CHANGED=true
+        else
+          NODE_MODULE_CHANGED=false;
+        fi
+        logger "MAIN-START CHECKING MODULE STATUS $(date) $NODE_MODULE_CHANGED"
+        # only reset head when there is new expected revision number
+        # this is to reduce the freq of calling 'git reset'
+        if [[ $EXPECTED_REVISION != $CURRENT_REVISION || "$NODE_MODULE_CHANGED" = true ]]; then
+            logger "MAIN-START CHECKING MODULE RESET $(date) $NODE_MODULE_CHANGED $EXPECTED_REVISION $CURRENT_REVISION"
+            $MGIT fetch origin  || $MGIT fetch origin || logger "MAIN-START MODULE FAILED TO FETCH ORIGIN"
+            $MGIT reset -q --hard `cat $REVISION_FILE` || logger "MAIN-START MODULE FAILED TO RESET ORIGIN"
+            if [[ -n $FWPRODUCTION ]]; then
+                git clean -xdf # clean up all untracking files in node modules repo
+                # only clean untrack files in production mode
+            fi
+        fi
+        cd - &>/dev/null
+      fi
+  fi
+}
+
+# upgrade node8 if necessary
+# use_right_node_modules
+
+# update ~/.node_modules
+update_node_modules
+update_node_modules_link
+
+record_latest_production_branch
+
+logger "MAIN-START Finish Update Modules "
+
+cd /tmp
+if [ ! -f $FIREWALLA_HOME/bin/dev ]; then
+  if [[ $branch =~ release.* ]]
+    then
+     export FWPRODUCTION=$branch
+     cp $FIREWALLA_HOME/bin/real/bitbridge4 $FIREWALLA_HOME/bin/.
+     cp $FIREWALLA_HOME/bin/real/bitbridge{3,7} $FIREWALLA_HOME/bin/.
+     cp $FIREWALLA_HOME/bin/mock/bitbridge6a $FIREWALLA_HOME/bin/.
+     if [ -f /home/pi/.firewalla/config/enablev6 ]; then
+         cp $FIREWALLA_HOME/bin/real/bitbridge6 $FIREWALLA_HOME/bin/.
+     else
+         cp $FIREWALLA_HOME/bin/mock/bitbridge6 $FIREWALLA_HOME/bin/.
+     fi
+     echo $FWPRODUCTION > /tmp/FWPRODUCTION
+     mkdir -p /home/pi/.forever
+     sudo rm -f /home/pi/.forever/{kickui,api,main,monitor}.log
+    else
+     cp $FIREWALLA_HOME/bin/real/bitbridge4 $FIREWALLA_HOME/bin/.
+     cp $FIREWALLA_HOME/bin/real/bitbridge{3,7} $FIREWALLA_HOME/bin/.
+     cp $FIREWALLA_HOME/bin/real/bitbridge6a $FIREWALLA_HOME/bin/.
+     cp $FIREWALLA_HOME/bin/real/bitbridge6 $FIREWALLA_HOME/bin/.
+     mkdir -p /home/pi/.forever
+     [[ -e /tmp/FWPRODUCTION ]] && rm /tmp/FWPRODUCTION
+  fi
+else
+     cp $FIREWALLA_HOME/bin/mock/* $FIREWALLA_HOME/bin/.
+     mkdir -p /home/pi/.forever
+     rm /tmp/FWPRODUCTION
+fi
+
+# Setup permissions
+sudo setcap cap_net_admin,cap_net_raw=eip $FIREWALLA_HOME/bin/bitbridge4
+sudo setcap cap_net_admin,cap_net_raw=eip $FIREWALLA_HOME/bin/bitbridge6a
+sudo setcap cap_net_admin,cap_net_raw=eip $FIREWALLA_HOME/bin/bitbridge7
+sudo setcap cap_net_admin,cap_net_raw=eip $FIREWALLA_HOME/bin/bitbridge6
+
+sudo sysctl -w net.core.default_qdisc=fq >/dev/null
+
+sudo sysctl -w net.netfilter.nf_conntrack_acct=1 >/dev/null
+
+# Enable TCP_BBR
+if [[ "x$TCP_BBR" == "xyes" ]]; then
+    logger "FIREWALLA:MAIN:ENABLE_TCP_BBR"
+    sudo modprobe tcp_bbr
+    sudo sysctl -w net.ipv4.tcp_congestion_control=bbr &>/dev/null
+fi
+
+#fix network
+# sudo cp $FIREWALLA_HOME/etc/duplex_patch /etc/network/if-pre-up.d/.
+
+#For testing only
+#export FWPRODUCTION=$branch
+#cat $FWPRODUCTION > /tmp/FWPRODUCTION
+
+sudo ip6tables -w -I OUTPUT -p icmpv6 --icmpv6-type redirect -j DROP
+
+cd $FIREWALLA_HOME
+
+pre_main
+
+function check_upgrade {
+    PACKAGE_NAME=$1
+    PACKAGE_VERSION=$2
+    if [[ ! -f $FIREWALLA_HOME/node_modules/$PACKAGE_NAME/package.json && ! -f ~/.node_modules/$PACKAGE_NAME/package.json ]]; then
+        echo "Updating NPM $PACKAGE_NAME"
+        npm install $PACKAGE_NAME@$PACKAGE_VERSION
+    fi
+}
+
+if [[ $RAMFS_ROOT_PARTITION != "yes" ]]; then
+  # x86_64 is using ramfs for / partition, this can save memory
+  if which nodejs; then
+      sudo setcap cap_net_raw+eip $(eval readlink -f `which nodejs`)
+  fi
+  if which node; then
+      sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)
+  elif [[ -e /home/pi/firewalla/bin/node ]]; then
+      sudo setcap cap_net_raw+eip /home/pi/firewalla/bin/node
+  fi
+fi
+
+# Take care of upgrade differently
+
+function create_bootstrap_scripts_folder() {
+    logger "MAIN-START create_bootstrap_scripts_folder"
+    mkdir -p $PI_HOME/scripts
+
+    CHECKSUM_FILE=$FIREWALLA_HOME/scripts/bootstrap.sha256sum
+
+    if [[ ! -e $CHECKSUM_FILE ]]; then
+        logger "MAIN-START BOOTSTRAP FILE CHECKSUM NOT EXIST"
+        return 0 # do nothing if checksum file not exist
+    fi
+
+    # sha256sum must be running under scripts folder
+    if ! (cd $FIREWALLA_HOME/scripts; sha256sum -c $CHECKSUM_FILE) &> /dev/null; then
+        logger "MAIN-START BOOTSTRAP FILE CHECKSUM FAILED"
+        (cd $FIREWALLA_HOME/scripts; sha256sum -c $CHECKSUM_FILE) | logger # print checksum details to logger for debugging purpose
+        return 1 # checksum failed
+    fi
+
+    [ -s /home/pi/firewalla/scripts/network_settings.sh ] && cp /home/pi/firewalla/scripts/network_settings.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/fire-time.sh ] && cp /home/pi/firewalla/scripts/fire-time.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/fireupgrade.sh ] && cp /home/pi/firewalla/scripts/fireupgrade.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/check_reset.sh ] && cp /home/pi/firewalla/scripts/check_reset.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/check_fix_network.sh ] && cp /home/pi/firewalla/scripts/check_fix_network.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/fire-ping.sh ] && cp /home/pi/firewalla/scripts/fire-ping.sh $PI_HOME/scripts/.
+    [ -s /home/pi/firewalla/scripts/mgit ] && cp /home/pi/firewalla/scripts/mgit $PI_HOME/scripts/.
+    if [[ ! -f /.dockerenv ]]; then
+        if [ -s /home/pi/scripts/fireupgrade.sh ]; then
+            [ -s /home/pi/firewalla/etc/fireupgrade2.service ] && sudo cp /home/pi/firewalla/etc/fireupgrade2.service /etc/systemd/system/fireupgrade.service
+        else
+            [ -s /home/pi/firewalla/etc/fireupgrade.service ] && sudo cp /home/pi/firewalla/etc/fireupgrade.service /etc/systemd/system/fireupgrade.service
+        fi
+    fi
+    sync
+    sync
+}
+
+create_bootstrap_scripts_folder
+# Try to recover any broken repos if Git failed before with mark
+# Has to use the "mgit" outside firewalla since it could be recovered
+test -z $NO_MGIT_RECOVER && $PI_HOME/scripts/mgit recover
+
+#reload services
+if [[ ! -f /.dockerenv ]]; then
+    logger "MAIN-START settings services"
+    sudo cp $(get_brofish_service) /etc/systemd/system/.
+    sudo cp $(get_openvpn_service) /lib/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/firewalla.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/firemon.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/firekick.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/fireui.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/fireapi.service /etc/systemd/system/.
+    ${NEED_FIREHB:=true} && sudo cp /home/pi/firewalla/etc/firehb.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/firemain.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/firemasq.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/extension/dnscrypt/dnscrypt.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/docker-compose@.service /etc/systemd/system/
+    sudo cp /home/pi/firewalla/etc/firehttpd.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/bitbridge4.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/bitbridge6.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/extension/wifi/firewifi@.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/intelproxy.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/extension/unbound/unbound.service /etc/systemd/system/.
+    sudo cp /home/pi/firewalla/etc/fireupgrade_cond@.service /etc/systemd/system/.
+
+    if [[ -n $(get_suricata_service) ]]; then
+      sudo cp $(get_suricata_service) /etc/systemd/system/.
+    fi
+
+    ${NEED_FIRESTATUS:=false} && sudo cp /home/pi/firewalla/etc/firestatus.service /etc/systemd/system/. && sudo systemctl enable firestatus
+
+    if ${OVERLAY_RESET_ON_BOOT}; then
+      sudo mount -o remount,rw /media/root-ro
+      sudo cp /home/pi/firewalla/etc/fireonboot.service /media/root-ro/etc/systemd/system/fireonboot.service
+      sudo ln -sf /etc/systemd/system/fireonboot.service /media/root-ro/etc/systemd/system/multi-user.target.wants/fireonboot.service
+      sudo mount -o remount,ro /media/root-ro &>/dev/null
+    else
+      sudo cp /home/pi/firewalla/etc/fireonboot.service /etc/systemd/system/fireonboot.service
+      sudo systemctl enable fireonboot
+    fi
+
+    sudo systemctl daemon-reload
+
+    # to make sure fireapi service is always started
+    # so that app can try best to connect box via local LAN or WAN
+    sudo systemctl enable fireapi
+    if ${NEED_FIREHB:=true}
+    then
+        sudo systemctl enable firehb
+        sudo systemctl restart firehb # start if not started
+    else
+        sudo systemctl disable firehb
+        sudo systemctl stop firehb # shutdown if no firehdb needed
+    fi
+
+    if [[ "$MANAGED_BY_FIREBOOT" == "yes" ]]; then
+      sudo systemctl disable firewalla
+      sudo systemctl disable fireupgrade
+      sudo systemctl disable brofish
+    else
+      sudo systemctl reenable firewalla
+      sudo systemctl reenable fireupgrade
+      sudo systemctl reenable brofish
+    fi
+
+fi
+
+cd sys
+
+if [[ -z "$NO_FIREKICK_RESTART" ]]; then
+  if [[ -f /.dockerenv ]]; then
+    forever start  -a --uid kickui -c "${FIREWALLA_HOME}/bin/node --expose-gc"  kickstart.js --config /encipher.config/netbot.config
+  else
+    echo "Restarting FireKick..."
+    sudo systemctl restart firekick
+  fi
+fi
+
+cd ..
+cd net2
+
+# this config is necessary for forwarding DNS requests to dnsmasq
+sudo sysctl -w net.ipv4.conf.all.route_localnet=1 >/dev/null
+
+
+if [[ -f /.dockerenv ]]; then
+    forever start  -a --uid main  -c "${FIREWALLA_HOME}/bin/node --expose-gc"  ./main.js
+else
+    echo "Restarting FireMain..."
+    sudo systemctl restart firemain
+fi
+
+cd ..
+cd monitor
+if [[ -f /.dockerenv ]]; then
+    forever start -a --uid monitor -c "${FIREWALLA_HOME}/bin/node --expose-gc"  MonitorMain.js
+else
+    echo "Restarting FireMon..."
+    sudo systemctl restart firemon
+fi
+cd ..
+
+sudo /usr/local/$BRO_PROC_NAME/bin/${BRO_PROC_NAME}ctl cron &>/dev/null
+sudo /usr/local/$BRO_PROC_NAME/bin/${BRO_PROC_NAME}ctl cron enable >/dev/null
+sync
+
+cd api
+if [[ -f /.dockerenv ]]; then
+    forever start -a --uid api -c "${FIREWALLA_HOME}/bin/node --expose-gc"  bin/www
+else
+    echo "Restarting FireApi..."
+    sudo systemctl restart fireapi
+fi
+cd ..
+
+cd extension/httpd
+if [[ -f /.dockerenv ]]; then
+    forever start -a --uid root httpd.js
+else
+    # sudo systemctl restart firehttpd
+    echo test > /dev/null
+fi
+cd ../../
+
+sync
+
+DEFAULT_ROUTE=$(/sbin/ip r | grep default | cut -d ' ' -f 3 | sed -n '1p')
+
+# run post_run in background
+# Be careful that this script will be not executed when upgrading in a remote support connection
+# because restarting fireapi above will kill the connection, and the upgrade script will fail to reach the code here.
+${FIREWALLA_HOME}/scripts/post_run.sh &>/dev/null </dev/null
+
+logger "MAIN-START EXITED $(date)"
+
+logger "UPTIME: $(awk '{print $1}' /proc/uptime)"

@@ -1,0 +1,445 @@
+/*    Copyright 2016-2022 Firewalla Inc.
+ *
+ *    This program is free software: you can redistribute it and/or  modify
+ *    it under the terms of the GNU Affero General Public License, version 3,
+ *    as published by the Free Software Foundation.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Affero General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Affero General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+'use strict';
+
+const log = require('../net2/logger.js')(__filename);
+
+const Sensor = require('./Sensor.js').Sensor;
+
+const extensionManager = require('./ExtensionManager.js')
+const NetworkProfileManager = require('../net2/NetworkProfileManager.js');
+const NetworkProfile = require('../net2/NetworkProfile.js');
+const TagManager = require('../net2/TagManager.js');
+const IdentityManager = require('../net2/IdentityManager.js');
+const rclient = require('../util/redis_manager.js').getRedisClient()
+const sem = require('../sensor/SensorEventManager.js').getInstance();
+
+const f = require('../net2/Firewalla.js');
+const fc = require('../net2/config.js');
+
+const userConfigFolder = f.getUserConfigFolder();
+const dnsmasqConfigFolder = `${userConfigFolder}/dnsmasq`;
+
+const FALLBACK_FAMILY_DNS = ["8.8.8.8"]; // these are just backup servers
+let FAMILY_DNS = null;
+const fs = require('fs');
+const Promise = require('bluebird');
+Promise.promisifyAll(fs);
+
+const DNSMASQ = require('../extension/dnsmasq/dnsmasq.js');
+const Constants = require('../net2/Constants.js');
+const dnsmasq = new DNSMASQ();
+
+const featureName = "family_protect";
+const policyKeyName = "family";
+const configName = "familyConfig";
+const configKey = "ext.family.config";
+
+class FamilyProtectPlugin extends Sensor {
+    async run() {
+        this.systemSwitch = false;
+        this.adminSystemSwitch = false;
+        this.macAddressSettings = {};
+        this.networkSettings = {};
+        this.tagSettings = {};
+        this.identitySettings = {};
+        extensionManager.registerExtension(policyKeyName, this, {
+            applyPolicy: this.applyPolicy,
+            start: this.globalOn,
+            stop: this.globalOff,
+        });
+
+        this.hookFeature(featureName);
+
+        sem.on('FAMILY_REFRESH', (event) => {
+          if (event.config)
+            this.applyFamilyConfig(event.config)
+          this.applyFamilyProtect()
+        });
+
+        sem.on('FAMILY_RESET', async () => {
+          try {
+            await fc.disableDynamicFeature(featureName)
+            for (const tag in this.tagSettings) this.tagSettings[tag] = 0
+            for (const uuid in this.networkSettings) this.networkSettings[uuid] = 0
+            for (const mac in this.macAddressSettings) this.macAddressSettings[mac] = 0
+            for (const guid in this.identitySettings) this.identitySettings[guid] = 0
+            this.applyFamilyProtect()
+            FAMILY_DNS = null
+            await rclient.unlinkAsync(configKey)
+          } catch(err) {
+            log.error('Error resetting family', err)
+          }
+        });
+    }
+
+    async job() {
+        await this.applyFamilyProtect();
+    }
+
+    async getFamilyConfig() {
+      const str = await rclient.getAsync(configKey)
+      return JSON.parse(str)
+    }
+
+    applyFamilyConfig(config) {
+      if (config && Array.isArray(config.servers))
+        FAMILY_DNS = config.servers
+    }
+
+    async setFamilyConfig(config) {
+      this.applyFamilyConfig(config)
+      await rclient.setAsync(configKey, JSON.stringify(config))
+    }
+
+    async apiRun() {
+      extensionManager.onGet(configName, async (msg, data) => {
+        const config = await this.getFamilyConfig(data)
+        return  config
+      });
+
+      extensionManager.onSet(configName, async (msg, data) => {
+        try {await extensionManager._precedeRecord(msg.id, {origin: await this.getFamilyConfig()})} catch(err) {};
+        if (data) {
+          await this.setFamilyConfig(data)
+          sem.sendEventToFireMain({
+            type: 'FAMILY_REFRESH',
+            config: data,
+          });
+        }
+      });
+
+      extensionManager.onCmd('familyReset', async () => {
+        sem.sendEventToFireMain({
+          type: 'FAMILY_RESET',
+        })
+      });
+    }
+
+    async applyPolicy(host, ip, policy) {
+        log.info("Applying family protect policy:", ip, policy);
+        try {
+            if (ip === '0.0.0.0') {
+                if (policy == true) {
+                    this.systemSwitch = true;
+                } else {
+                    this.systemSwitch = false;
+                }
+                return this.applySystemFamilyProtect();
+            } else {
+                if (!host)
+                  return;
+                switch (host.constructor.name) {
+                  case "Tag": {
+                    const tagUid = host.o && host.o.uid;
+                    if (tagUid) {
+                      if (policy === true)
+                        this.tagSettings[tagUid] = 1;
+                      // false means unset, this is for backward compatibility
+                      if (policy === false)
+                        this.tagSettings[tagUid] = 0;
+                      // null means disabled, this is for backward compatibility
+                      if (policy === null)
+                        this.tagSettings[tagUid] = -1;
+                      await this.applyTagFamilyProtect(tagUid);
+                    }
+                    break;
+                  }
+                  case "NetworkProfile": {
+                    const uuid = host.o && host.o.uuid
+                    if (uuid) {
+                      if (policy === true)
+                        this.networkSettings[uuid] = 1;
+                      if (policy === false)
+                        this.networkSettings[uuid] = 0;
+                      if (policy === null)
+                        this.networkSettings[uuid] = -1;
+                      await this.applyNetworkFamilyProtect(uuid);
+                    }
+                    break;
+                  }
+                  case "Host": {
+                    const macAddress = host && host.o && host.o.mac;
+                    if (macAddress) {
+                      if (policy === true)
+                        this.macAddressSettings[macAddress] = 1;
+                      if (policy === false)
+                        this.macAddressSettings[macAddress] = 0;
+                      if (policy === null)
+                        this.macAddressSettings[macAddress] = -1;
+                      await this.applyDeviceFamilyProtect(macAddress);
+                    }
+                    break;
+                  }
+                  default: 
+                  if (IdentityManager.isIdentity(host)) {
+                    const guid = IdentityManager.getGUID(host);
+                    if (guid) {
+                      if (policy === true)
+                        this.identitySettings[guid] = 1;
+                      if (policy === false)
+                        this.identitySettings[guid] = 0;
+                      if (policy === null)
+                        this.identitySettings[guid] = -1;
+                      await this.applyIdentityFamilyProtect(guid);
+                    }
+                  }
+                }
+
+            }
+        } catch (err) {
+            log.error("Got error when applying family protect policy", err);
+        }
+    }
+
+    async applyFamilyProtect() {
+      try {
+        const configFilePath = `${dnsmasqConfigFolder}/${featureName}.conf`;
+        if (this.adminSystemSwitch) {
+          const dnsaddrs = await this.familyDnsAddr();
+          const dnsmasqEntry = `server=${dnsaddrs[0]}$${featureName}$*${Constants.DNS_DEFAULT_WAN_TAG}`;
+          log.info(`Using dns ${dnsaddrs[0]}`)
+          await fs.writeFileAsync(configFilePath, dnsmasqEntry);
+        } else {
+          await fs.unlinkAsync(configFilePath).catch((err) => {});
+        }
+
+        await this.applySystemFamilyProtect();
+        for (const macAddress in this.macAddressSettings) {
+          await this.applyDeviceFamilyProtect(macAddress);
+        }
+        for (const tagUid in this.tagSettings) {
+          const tagExists = await TagManager.tagUidExists(tagUid);
+          if (!tagExists)
+            // reset tag if it is already deleted
+            this.tagSettings[tagUid] = 0;
+          await this.applyTagFamilyProtect(tagUid);
+          if (!tagExists)
+            delete this.tagSettings[tagUid];
+        }
+        for (const uuid in this.networkSettings) {
+          const networkProfile = NetworkProfileManager.getNetworkProfile(uuid);
+          if (!networkProfile)
+            delete this.networkSettings[uuid];
+          else
+            await this.applyNetworkFamilyProtect(uuid);
+        }
+        for (const guid in this.identitySettings) {
+          const identity = IdentityManager.getIdentityByGUID(guid);
+          if (!identity)
+            delete this.identitySettings[guid];
+          else
+            await this.applyIdentityFamilyProtect(guid);
+        }
+      } catch(err) {
+        log.error('Failed to apply family policy', err)
+      }
+    }
+
+    async applySystemFamilyProtect() {
+      if (this.systemSwitch) {
+        return this.systemStart();
+      } else {
+        return this.systemStop();
+      }
+    }
+
+    async applyTagFamilyProtect(tagUid) {
+      if (this.tagSettings[tagUid] == 1)
+        return this.perTagStart(tagUid);
+      if (this.tagSettings[tagUid] == -1)
+        return this.perTagStop(tagUid);
+      return this.perTagReset(tagUid);
+    }
+
+    async applyNetworkFamilyProtect(uuid) {
+      if (this.networkSettings[uuid] == 1)
+        return this.perNetworkStart(uuid);
+      if (this.networkSettings[uuid] == -1)
+        return this.perNetworkStop(uuid);
+      return this.perNetworkReset(uuid);
+    }
+
+    async applyDeviceFamilyProtect(macAddress) {
+      if (this.macAddressSettings[macAddress] == 1)
+        return this.perDeviceStart(macAddress);
+      if (this.macAddressSettings[macAddress] == -1)
+        return this.perDeviceStop(macAddress);
+      return this.perDeviceReset(macAddress);
+    }
+
+    async applyIdentityFamilyProtect(guid) {
+      if (this.identitySettings[guid] == 1)
+        return this.perIdentityStart(guid);
+      if (this.identitySettings[guid] == -1)
+        return this.perIdentityStop(guid);
+      return this.perIdentityReset(guid);
+    }
+
+    async systemStart() {
+        const configFile = `${dnsmasqConfigFolder}/${featureName}_system.conf`;
+        const dnsmasqEntry = `mac-address-tag=%FF:FF:FF:FF:FF:FF$${featureName}\n`;
+        await fs.writeFileAsync(configFile, dnsmasqEntry);
+        dnsmasq.scheduleRestartDNSService();
+    }
+
+    async systemStop() {
+      const configFile = `${dnsmasqConfigFolder}/${featureName}_system.conf`;
+      const dnsmasqEntry = `mac-address-tag=%FF:FF:FF:FF:FF:FF$!${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqEntry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perTagStart(tagUid) {
+      const configFile = `${dnsmasqConfigFolder}/tag_${tagUid}_${featureName}.conf`;
+      const dnsmasqEntry = `group-tag=@${tagUid}$${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqEntry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perTagStop(tagUid) {
+      const configFile = `${dnsmasqConfigFolder}/tag_${tagUid}_${featureName}.conf`;
+      const dnsmasqEntry = `group-tag=@${tagUid}$!${featureName}\n`; // match negative tag
+      await fs.writeFileAsync(configFile, dnsmasqEntry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perTagReset(tagUid) {
+      const configFile = `${dnsmasqConfigFolder}/tag_${tagUid}_${featureName}.conf`;
+      await fs.unlinkAsync(configFile).catch((err) => {});
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perNetworkStart(uuid) {
+      const networkProfile = NetworkProfileManager.getNetworkProfile(uuid);
+      if (!networkProfile) {
+        log.warn(`Network profile is not found on ${uuid}`);
+        return;
+      }
+      const configFile = `${NetworkProfile.getDnsmasqConfigDirectory(uuid)}/${featureName}_${uuid}.conf`;
+      const dnsmasqEntry = `mac-address-tag=%00:00:00:00:00:00$${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqEntry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perNetworkStop(uuid) {
+      const networkProfile = NetworkProfileManager.getNetworkProfile(uuid);
+      if (!networkProfile) {
+        log.warn(`Network profile is not found on ${uuid}`);
+        return;
+      }
+      const configFile = `${NetworkProfile.getDnsmasqConfigDirectory(uuid)}/${featureName}_${uuid}.conf`;
+      // explicit disable family protect
+      const dnsmasqEntry = `mac-address-tag=%00:00:00:00:00:00$!${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqEntry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perNetworkReset(uuid) {
+      const networkProfile = NetworkProfileManager.getNetworkProfile(uuid);
+      if (!networkProfile) {
+        log.warn(`Network profile is not found on ${uuid}`);
+        return;
+      }
+      const configFile = `${NetworkProfile.getDnsmasqConfigDirectory(uuid)}/${featureName}_${uuid}.conf`;
+      // remove config file
+      await fs.unlinkAsync(configFile).catch((err) => {});
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perDeviceStart(macAddress) {
+      const configFile = `${dnsmasqConfigFolder}/${featureName}_${macAddress}.conf`;
+      const dnsmasqentry = `mac-address-tag=%${macAddress.toUpperCase()}$${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqentry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perDeviceStop(macAddress) {
+      const configFile = `${dnsmasqConfigFolder}/${featureName}_${macAddress}.conf`;
+      const dnsmasqentry = `mac-address-tag=%${macAddress.toUpperCase()}$!${featureName}\n`;
+      await fs.writeFileAsync(configFile, dnsmasqentry);
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perDeviceReset(macAddress) {
+      const configFile = `${dnsmasqConfigFolder}/${featureName}_${macAddress}.conf`;
+      // remove config file
+      await fs.unlinkAsync(configFile).catch((err) => {});
+      dnsmasq.scheduleRestartDNSService();
+    }
+
+    async perIdentityStart(guid) {
+      const identity = IdentityManager.getIdentityByGUID(guid);
+      if (identity) {
+        const uid = identity.getUniqueId();
+        const configFile = `${dnsmasqConfigFolder}/${identity.constructor.getDnsmasqConfigFilenamePrefix(uid)}_${featureName}.conf`;
+        const dnsmasqEntry = `group-tag=@${identity.constructor.getEnforcementDnsmasqGroupId(uid)}$${featureName}\n`;
+        await fs.writeFileAsync(configFile, dnsmasqEntry);
+        dnsmasq.scheduleRestartDNSService();
+      }
+    }
+  
+    async perIdentityStop(guid) {
+      const identity = IdentityManager.getIdentityByGUID(guid);
+      if (identity) {
+        const uid = identity.getUniqueId();
+        const configFile = `${dnsmasqConfigFolder}/${identity.constructor.getDnsmasqConfigFilenamePrefix(uid)}_${featureName}.conf`;
+        const dnsmasqEntry = `group-tag=@${identity.constructor.getEnforcementDnsmasqGroupId(uid)}$!${featureName}\n`;
+        await fs.writeFileAsync(configFile, dnsmasqEntry);
+        dnsmasq.scheduleRestartDNSService();
+      }
+    }
+  
+    async perIdentityReset(guid) {
+      const identity = IdentityManager.getIdentityByGUID(guid);
+      if (identity) {
+        const uid = identity.getUniqueId();
+        const configFile = `${dnsmasqConfigFolder}/${identity.constructor.getDnsmasqConfigFilenamePrefix(uid)}_${featureName}.conf`;
+        await fs.unlinkAsync(configFile).catch((err) => { });
+        dnsmasq.scheduleRestartDNSService();
+      }
+    }
+
+    // global on/off
+    async globalOn() {
+        this.adminSystemSwitch = true;
+        await this.applyFamilyProtect();
+    }
+
+    async globalOff() {
+        this.adminSystemSwitch = false;
+        await this.applyFamilyProtect();
+    }
+
+  async familyDnsAddr() {
+    if (FAMILY_DNS && FAMILY_DNS.length != 0) {
+      return FAMILY_DNS;
+    }
+    const customConfig = await this.getFamilyConfig()
+    if (customConfig && customConfig.servers) {
+      FAMILY_DNS = customConfig.servers
+      return FAMILY_DNS
+    }
+    const data = await f.getBoneInfoAsync()
+    if (data && data.config && data.config.dns && data.config.dns.familymode) {
+      FAMILY_DNS = data.config.dns.familymode
+      return FAMILY_DNS
+    } else {
+      return FALLBACK_FAMILY_DNS
+    }
+  }
+}
+
+module.exports = FamilyProtectPlugin

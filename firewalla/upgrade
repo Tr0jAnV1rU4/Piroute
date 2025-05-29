@@ -1,0 +1,29 @@
+#!/bin/bash -
+sudo service firemain stop
+sudo service firemon stop
+sudo service fireui stop
+sudo service firekick stop
+sync
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ $branch =~ release.* ]]
+  then
+    echo "on release"
+    cd /home/pi/firewalla
+    sudo -u pi git fetch origin $branch
+    sudo -u pi git reset --hard origin/$branch
+    sudo -u pi git pull
+    cd /home/pi/.node_modules
+    sudo -u pi git fetch origin $branch
+    sudo -u pi git reset --hard origin/$branch
+    sudo -u pi git pull
+
+    if [[ -e "/home/pi/.firewalla/config/.no_auto_upgrade" ]]; then
+        echo "no_auto_upgrade flag removed"
+        sudo rm /home/pi/.firewalla/config/.no_auto_upgrade
+    fi
+  else
+    echo "on devbranch"
+  fi
+sync
+sync
+sudo reboot

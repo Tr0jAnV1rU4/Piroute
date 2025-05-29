@@ -1,0 +1,13 @@
+[Unit]
+Description=Firewalla HB
+After=network.target
+
+[Service]
+User=pi
+Restart=always
+WorkingDirectory=/home/pi/firewalla/
+ExecStart=/home/pi/firewalla/scripts/firehb.sh
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

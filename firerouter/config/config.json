@@ -1,0 +1,232 @@
+{
+  "plugins": [
+    {
+      "file_path": "./interface/phy_intf_plugin.js",
+      "config_path": "interface.phy",
+      "category": "interface",
+      "init_seq": 0
+    },
+    {
+      "file_path": "./interface/bond_intf_plugin.js",
+      "config_path": "interface.bond",
+      "category": "interface",
+      "init_seq": 1
+    },
+    {
+      "file_path": "./interface/vlan_intf_plugin.js",
+      "config_path": "interface.vlan",
+      "category": "interface",
+      "init_seq": 2
+    },
+    {
+      "file_path": "./interface/wlan_intf_plugin.js",
+      "config_path": "interface.wlan",
+      "category": "interface",
+      "init_seq": 2
+    },
+    {
+      "file_path": "./interface/pppoe_intf_plugin.js",
+      "config_path": "interface.pppoe",
+      "category": "interface",
+      "init_seq": 3
+    },
+    {
+      "file_path": "./interface/bridge_intf_plugin.js",
+      "config_path": "interface.bridge",
+      "category": "interface",
+      "init_seq": 4
+    },
+    {
+      "file_path": "./interface/openvpn_intf_plugin.js",
+      "config_path": "interface.openvpn",
+      "category": "interface",
+      "init_seq": 4
+    },
+    {
+      "file_path": "./interface/tun_intf_plugin.js",
+      "config_path": "interface.tun",
+      "category": "interface",
+      "init_seq": 4
+    },
+    {
+      "file_path": "./interface/docker_intf_plugin.js",
+      "config_path": "interface.docker",
+      "category": "interface",
+      "init_seq": 4
+    },
+    {
+      "file_path": "./routing/routing_plugin.js",
+      "config_path": "routing",
+      "category": "routing",
+      "config": {
+        "smooth_failover": true
+      },
+      "init_seq": 5
+    },
+    {
+      "file_path": "./interface/wireguard_intf_plugin.js",
+      "config_path": "interface.wireguard",
+      "category": "interface",
+      "init_seq": 6
+    },
+    {
+      "file_path": "./nat/nat_plugin.js",
+      "config_path": "nat",
+      "category": "nat",
+      "init_seq": 7
+    },
+    {
+      "file_path": "./dns/dns_plugin.js",
+      "config_path": "dns",
+      "category": "dns",
+      "init_seq":8
+    },
+    {
+      "file_path": "./dhcp/dhcp_plugin.js",
+      "config_path": "dhcp",
+      "category": "dhcp",
+      "init_seq": 8
+    },
+    {
+      "file_path": "./dhcp/dhcp6_plugin.js",
+      "config_path": "dhcp6",
+      "category": "dhcp6",
+      "init_seq": 8
+    },
+    {
+      "file_path": "./sshd/sshd_plugin.js",
+      "config_path": "sshd",
+      "category": "sshd",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./upnp/upnp_plugin.js",
+      "config_path": "upnp",
+      "category": "upnp",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./nat_passthrough/nat_passthrough_plugin.js",
+      "config_path": "nat_passthrough",
+      "category": "nat_passthrough",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./mdns_reflector/mdns_reflector_plugin.js",
+      "config_path": "mdns_reflector",
+      "category": "mdns_reflector",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./igmp_proxy/igmp_proxy_plugin.js",
+      "config_path": "igmp_proxy",
+      "category": "igmp_proxy",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./mroute/mroute_plugin.js",
+      "config_path": "mroute",
+      "category": "mroute",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./icmp/icmp_plugin.js",
+      "config_path": "icmp",
+      "category": "icmp",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./hostapd/hostapd_plugin.js",
+      "config_path": "hostapd",
+      "category": "hostapd",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./docker/docker_plugin.js",
+      "config_path": "docker",
+      "category": "docker",
+      "init_seq": 9
+    },
+    {
+      "file_path": "./profile/profile_plugin.js",
+      "config_path": "profile",
+      "category": "profile",
+      "init_seq": 10
+    },
+    {
+      "file_path": "./assets/assets_template_plugin.js",
+      "config_path": "assets_template",
+      "category": "assets_template",
+      "init_seq": 11
+    },
+    {
+      "file_path": "./assets/assets_plugin.js",
+      "config_path": "assets",
+      "category": "assets",
+      "init_seq": 12
+    },
+    {
+      "file_path": "./apc/apc_plugin.js",
+      "config_path": "apc",
+      "category": "apc",
+      "init_seq": 12
+    }
+  ],
+  "sensors": [
+    {
+      "file_path": "./ifplug_sensor.js",
+      "config": {
+        "up_delay": 5,
+        "down_delay": 5
+      }
+    },
+    {
+      "file_path": "./ipchange_sensor.js",
+      "config": {
+        "delay": 5
+      }
+    },
+    {
+      "file_path": "./kern_netdev_sensor.js",
+      "config": {
+        "kern_netdev_enable_reboot": false
+      }
+    },
+    {
+      "file_path": "./wan_conn_check_sensor.js",
+      "config": {
+        "ping_test_ip": ["1.1.1.1", "8.8.8.8", "9.9.9.9"],
+        "ping_test_count": 8,
+        "ping_success_rate": 0.5,
+        "dns_test_domain": "github.com"
+      }
+    },
+    {
+      "file_path": "./if_presence_sensor.js",
+      "config": {
+
+      }
+    },
+    {
+      "file_path": "./wpa_connection_sensor.js",
+      "config": {
+        "log_file": "/var/log/wpa_supplicant.log",
+        "reject_threshold_count": 3,
+        "reject_threshold_min_interval": 20,
+        "reject_threshold_time_seconds": 300
+      }
+    },
+    {
+      "file_path": "./rtw_sensor.js",
+      "config": {
+        "log_file": "/var/log/rtw.log",
+        "fail_threshold_count": 3
+      }
+    },
+    {
+      "file_path": "./wlan_conf_update_sensor.js",
+      "config": {
+      }
+    }
+  ]
+}

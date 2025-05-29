@@ -1,0 +1,25 @@
+#!/bin/bash -
+sudo systemctl stop firemain
+sudo systemctl stop firemon
+sudo systemctl stop fireui
+sudo systemctl stop fireapi
+sudo systemctl stop firekick
+sudo systemctl stop firehttpd
+sudo systemctl stop firemasq
+sudo systemctl stop openvpn@server
+sync
+redis-cli flushall
+sudo rm -r -f /tmp/*
+sudo rm -r -f ~/.forever/*
+sudo rm -r -f /blog/*
+sudo rm -r -f /bspool/*
+sudo rm -r -f ~/ovpns/*
+sudo rm -r -f /etc/openvpn/easy-rsa/keys
+#sudo rm -r -f ~/.encipher/*
+#sudo rm -r -f ~/.firewalla/*
+sudo find /var/log -type f -exec /bin/cp /dev/null {} \;
+sync
+sync
+logger "REBOOT: Reset Data"
+/home/pi/firewalla/scripts/fire-reboot-normal
+

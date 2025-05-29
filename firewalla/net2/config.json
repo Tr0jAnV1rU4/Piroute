@@ -1,0 +1,1040 @@
+{
+  "version": 1.980,
+  "firewallaBoneServerURL": "https://firewalla.encipher.io/bone/api/v3",
+  "firewallaBoneFallbackServerURL": "https://firewalla.encipher.io/bone/api/v3",
+  "firewallaBoneServerDevURL": "https://firewalla.encipher.io/bone/api/v0",
+  "firewallaBoneFallbackServerDevURL": "https://firewalla.encipher.io/bone/api/v0",
+  "firewallaBoneServerNightlyURL": "https://fwdev.encipher.io/bone/api/dv5",
+  "firewallaGroupServerURL": "https://firewalla.encipher.io/iot/api/v2",
+  "firewallaGroupServerAlphaURL": "https://firewalla.encipher.io/iot/api/dv2",
+  "firewallaGroupServerDevURL": "https://firewalla.encipher.io/iot/api/dv0",
+  "firewallaLicenseServerURL": "https://firewalla.encipher.io/license/api/v1",
+  "firewallaDiagServerURL": "https://api.firewalla.com/diag/api/v1/device/",
+  "firewallaVPNCheckURL": "https://api.firewalla.com/diag/api/v1/vpn/check_portmapping",
+  "firewallaVPNCheckDevURL": "https://fwdev.encipher.io/diag/api/v1/vpn/check_portmapping",
+  "firewallaSocketIOURL": "https://connect.firewalla.com",
+  "SocketIOPath": "/socket",
+  "SocketIOAlphaPath": "/socket.v0",
+  "SocketIODevPath": "/socket.dev",
+  "cacheInit": true,
+  "monitor": {
+    "activityDuMin": 10,
+    "activityDuMax": 18000
+  },
+  "discovery": {
+    "networkInterfaces": [
+      "eth0",
+      "eth0:0",
+      "wlan0"
+    ]
+  },
+  "monitoringInterface": "eth0",
+  "monitoringInterface2": "eth0:0",
+  "monitoringWifiInterface": "wlan0",
+  "newSpoof": true,
+  "timing": {
+    "alarm.cooldown": 900,
+    "alarm.large_upload.cooldown": 14400,
+    "alarm.abnormal_bandwidth_usage.cooldown": 28800,
+    "alarm.data_plan_alarm.cooldown": 2592000,
+    "alarm.vpn_client_connection.cooldown": 14400,
+    "alarm.upnp.cooldown": 604800,
+    "alarm.dual_wan.cooldown": 60,
+    "alarm.alarm_screen_time.cooldown": 86400,
+    "alarm.weak_password.cooldown": 604800,
+    "alarm.subnet.cooldown": 2592000,
+    "alarm.vpn_connect.cooldown": 300,
+    "notification.box_online.cooldown": 900,
+    "notification.box_offline.threshold": 900,
+    "notification.resend.duration": 86400,
+    "notification.resend.maxcount": 50,
+    "alarm.sshPwdGuess.cooldown": 3600
+  },
+  "secondaryInterface": {
+    "intf": "eth0:0",
+    "ip": "192.168.218.1/24",
+    "ip2": "192.168.168.1/24"
+  },
+  "wifiInterface": {
+    "intf": "wlan0",
+    "ip": "10.0.218.1/24",
+    "mode": "router"
+  },
+  "vpnInterface": {
+    "subnet": "10.8.0.0/24"
+  },
+  "dhcp": {
+    "leaseTime": "24h"
+  },
+  "dns": {
+    "defaultDNSServer": "8.8.8.8",
+    "fallbackDNSServers": [
+      "8.8.8.8",
+      "1.1.1.1"
+    ],
+    "verificationDomains": [
+      "firewalla.encipher.io",
+      "github.com",
+      "api.firewalla.com"
+    ]
+  },
+  "sysInfo": {
+    "tailNum": 100
+  },
+  "policy": {
+    "autoBlock": true
+  },
+  "apiSensors": {
+    "DigitalFenceSensor": {},
+    "WOLSensor": {},
+    "APIRelaySensor": {},
+    "VPNRelaySensor": {},
+    "BoneSensor": {},
+    "AdditionalPairPlugin": {},
+    "DockerPlugin": {},
+    "EncipherPlugin": {},
+    "GuardianSensor": {},
+    "DNSCryptPlugin": {},
+    "UnboundPlugin": {},
+    "VPNCheckPlugin": {},
+    "SafeSearchPlugin": {},
+    "FamilyProtectPlugin": {},
+    "SystemDNSSensor": {},
+    "RemoteNotificationSensor": {},
+    "EventSensor": {},
+    "NetworkMonitorSensor": {},
+    "LiveStatsPlugin": {
+      "cacheTimeout": 30,
+      "cleanInterval": 30
+    },
+    "AdblockPlugin": {},
+    "WireGuardPlugin": {},
+    "InternalScanSensor": { "skip_verify": false, "strict_http": true, "mysql8": true},
+    "ExternalScanSensor": {
+      "scanCooldown": 300
+    },
+    "NseScanPlugin": {},
+    "InternetSpeedtestPlugin": {
+      "vendorCandidates": [
+        "ookla"
+      ],
+      "switchRatioThreshold": 0.88
+    },
+    "FlowCompressionSensor": {},
+    "FreeRadiusSensor": {},
+    "AlarmSensor": {},
+    "PcapZeekPlugin": {},
+    "PcapSuricataPlugin": {},
+    "IntelSensor": {},
+    "DataUsageSensor": {},
+    "ActionPlugin":{},
+    "OSIPlugin": {},
+    "STUNSensor": {},
+    "NoiseDomainsSensor": {},
+    "Iperf3Sensor": {},
+    "DeviceMonitorSensor": {}
+  },
+  "intels": [
+    "DeviceInfoIntel",
+    "DestInfoIntel",
+    "WhoisIPIntel",
+    "WhoisDomainIntel",
+    "SSLIntel",
+    "UAIntel",
+    "TransferContextIntel",
+    "MonkeyIntel",
+    "IntfInfoIntel",
+    "TagsInfoIntel",
+    "ScreenTimeScope"
+  ],
+  "sensors": {
+    "DigitalFenceSensor": {},
+    "OSIPlugin": {},
+    "AuthLogPlugin": {
+      "interval": 5,
+      "threshold": 30
+    },
+    "DHCPSensor": {},
+    "UPNPSensor": {
+      "interval": 600,
+      "expireInterval": 1800
+    },
+    "BonjourSensor": {
+      "ignoreServices": ["_airdrop", "_continuity", "_googlezone", "_matter"],
+      "nonReadableNameServices": [
+        "_raop", "_sleep-proxy", "_remotepairing", "_remotepairing-tunnel", "_apple-mobdev2",
+        "_asquic", "_dacp", "_spotify-connect", "_spotify-social-listening", "_trel"
+      ],
+      "ignoreNames": []
+    },
+    "AdvancedNmapSensor": {},
+    "NmapSensor": {},
+    "DeviceServiceScanSensor": {
+      "interval": 10800,
+      "firstScan": 120
+    },
+    "OpenPortByInboundFlowSensor": {},
+    "BoneSensor": {},
+    "DNSCryptPlugin": {
+      "refreshInterval": 1440
+    },
+    "UnboundPlugin": {},
+    "SlackSensor": {},
+    "SysPatchSensor": {},
+    "RuntimeConfigSensor": {},
+    "SSDPSensor": {
+      "interval": 600,
+      "cacheTTL": 3600
+    },
+    "OvpnConnSensor": {
+      "logPath": "/var/log/openvpn-server.log"
+    },
+    "WgvpnConnSensor": {},
+    "NaughtyMonkeySensor": {},
+    "ActiveProtectSensor": {},
+    "IntelLocalCachePlugin": {
+      "testURLs": [
+        "example.com/test/malware"
+      ]
+    },
+    "DNSMASQSensor": {},
+    "IntelReportSensor": {},
+    "VPNRelaySensor": {},
+    "PublicIPSensor": {
+      "interval": 7200
+    },
+    "APIRelaySensor": {},
+    "CategoryUpdateSensor": {
+      "regularInterval": 28800,
+      "securityInterval": 14400,
+      "countryInterval": 86400
+    },
+    "AutoBlocksRevalidationSensor": {},
+    "FlowAggregationSensor": {
+      "interval": 180,
+      "keySpan": 600,
+      "flowRange": 86400,
+      "sumFlowExpireTime": 86400,
+      "aggrFlowExpireTime": 86400,
+      "sumFlowMaxFlow": 200,
+      "sumAuditFlowMaxFlow": 400
+    },
+    "FreeRadiusSensor": {},
+    "IntelRevalidationSensor": {},
+    "BoxAliasSensor": {},
+    "SafeSearchPlugin": {
+      "mapping": {
+        "youtube_strict": {
+          "restrict.youtube.com": [
+            "www.youtube.com",
+            "m.youtube.com",
+            "youtubei.googleapis.com",
+            "youtube.googleapis.com",
+            "www.youtube-nocookie.com"
+          ]
+        },
+        "youtube_moderate": {
+          "restrictmoderate.youtube.com": [
+            "www.youtube.com",
+            "m.youtube.com",
+            "youtubei.googleapis.com",
+            "youtube.googleapis.com",
+            "www.youtube-nocookie.com"
+          ]
+        },
+        "google": {
+          "forcesafesearch.google.com": [
+            "www.google.com",
+            "www.google.ac",
+            "www.google.ad",
+            "www.google.ae",
+            "www.google.com.af",
+            "www.google.com.ag",
+            "www.google.com.ai",
+            "www.google.al",
+            "www.google.am",
+            "www.google.co.ao",
+            "www.google.com.ar",
+            "www.google.as",
+            "www.google.at",
+            "www.google.com.au",
+            "www.google.az",
+            "www.google.ba",
+            "www.google.com.bd",
+            "www.google.be",
+            "www.google.bf",
+            "www.google.bg",
+            "www.google.com.bh",
+            "www.google.bi",
+            "www.google.bj",
+            "www.google.com.bn",
+            "www.google.com.bo",
+            "www.google.com.br",
+            "www.google.bs",
+            "www.google.bt",
+            "www.google.co.bw",
+            "www.google.by",
+            "www.google.com.bz",
+            "www.google.ca",
+            "www.google.cd",
+            "www.google.cf",
+            "www.google.cg",
+            "www.google.ch",
+            "www.google.ci",
+            "www.google.co.ck",
+            "www.google.cl",
+            "www.google.cm",
+            "www.google.cn",
+            "www.google.com.co",
+            "www.google.co.cr",
+            "www.google.com.cu",
+            "www.google.cv",
+            "www.google.com.cy",
+            "www.google.cz",
+            "www.google.de",
+            "www.google.dj",
+            "www.google.dk",
+            "www.google.dm",
+            "www.google.com.do",
+            "www.google.dz",
+            "www.google.com.ec",
+            "www.google.ee",
+            "www.google.com.eg",
+            "www.google.es",
+            "www.google.com.et",
+            "www.google.fi",
+            "www.google.com.fj",
+            "www.google.fm",
+            "www.google.fr",
+            "www.google.ga",
+            "www.google.ge",
+            "www.google.gg",
+            "www.google.com.gh",
+            "www.google.com.gi",
+            "www.google.gl",
+            "www.google.gm",
+            "www.google.gp",
+            "www.google.gr",
+            "www.google.com.gt",
+            "www.google.gy",
+            "www.google.com.hk",
+            "www.google.hn",
+            "www.google.hr",
+            "www.google.ht",
+            "www.google.hu",
+            "www.google.co.id",
+            "www.google.ie",
+            "www.google.co.il",
+            "www.google.im",
+            "www.google.co.in",
+            "www.google.iq",
+            "www.google.is",
+            "www.google.it",
+            "www.google.je",
+            "www.google.com.jm",
+            "www.google.jo",
+            "www.google.co.jp",
+            "www.google.co.ke",
+            "www.google.com.kh",
+            "www.google.ki",
+            "www.google.kg",
+            "www.google.co.kr",
+            "www.google.com.kw",
+            "www.google.kz",
+            "www.google.la",
+            "www.google.com.lb",
+            "www.google.li",
+            "www.google.lk",
+            "www.google.co.ls",
+            "www.google.lt",
+            "www.google.lu",
+            "www.google.lv",
+            "www.google.com.ly",
+            "www.google.co.ma",
+            "www.google.md",
+            "www.google.me",
+            "www.google.mg",
+            "www.google.mk",
+            "www.google.ml",
+            "www.google.com.mm",
+            "www.google.mn",
+            "www.google.ms",
+            "www.google.com.mt",
+            "www.google.mu",
+            "www.google.mv",
+            "www.google.mw",
+            "www.google.com.mx",
+            "www.google.com.my",
+            "www.google.co.mz",
+            "www.google.com.na",
+            "www.google.com.nf",
+            "www.google.com.ng",
+            "www.google.com.ni",
+            "www.google.ne",
+            "www.google.nl",
+            "www.google.no",
+            "www.google.com.np",
+            "www.google.nr",
+            "www.google.nu",
+            "www.google.co.nz",
+            "www.google.com.om",
+            "www.google.com.pa",
+            "www.google.com.pe",
+            "www.google.com.pg",
+            "www.google.com.ph",
+            "www.google.com.pk",
+            "www.google.pl",
+            "www.google.pn",
+            "www.google.com.pr",
+            "www.google.ps",
+            "www.google.pt",
+            "www.google.com.py",
+            "www.google.com.qa",
+            "www.google.ro",
+            "www.google.ru",
+            "www.google.rw",
+            "www.google.com.sa",
+            "www.google.com.sb",
+            "www.google.sc",
+            "www.google.se",
+            "www.google.com.sg",
+            "www.google.sh",
+            "www.google.si",
+            "www.google.sk",
+            "www.google.com.sl",
+            "www.google.sn",
+            "www.google.so",
+            "www.google.sm",
+            "www.google.sr",
+            "www.google.st",
+            "www.google.com.sv",
+            "www.google.td",
+            "www.google.tg",
+            "www.google.co.th",
+            "www.google.com.tj",
+            "www.google.tk",
+            "www.google.tl",
+            "www.google.tm",
+            "www.google.tn",
+            "www.google.to",
+            "www.google.com.tr",
+            "www.google.tt",
+            "www.google.com.tw",
+            "www.google.co.tz",
+            "www.google.com.ua",
+            "www.google.co.ug",
+            "www.google.co.uk",
+            "www.google.com.uy",
+            "www.google.co.uz",
+            "www.google.com.vc",
+            "www.google.co.ve",
+            "www.google.vg",
+            "www.google.co.vi",
+            "www.google.com.vn",
+            "www.google.vu",
+            "www.google.ws",
+            "www.google.rs",
+            "www.google.co.za",
+            "www.google.co.zm",
+            "www.google.co.zw",
+            "www.google.cat"
+          ]
+        },
+        "bing": {
+          "strict.bing.com": [
+            "www.bing.com"
+          ]
+        },
+        "duckduckgo": {
+          "safe.duckduckgo.com": [
+            "duckduckgo.com"
+          ]
+        }
+      },
+      "mappingConfig": {
+        "safe.duckduckgo.com": 5
+      },
+      "defaultConfig": {
+        "youtube": "off",
+        "google": "on",
+        "bing": "on",
+        "duckduckgo": "on"
+      }
+    },
+    "FamilyProtectPlugin": {},
+    "NTPRedirectPlugin": {
+      "featureName": "ntp_redirect",
+      "policyName": "ntp_redirect"
+    },
+    "AdblockPlugin": {},
+    "DeviceNameUpdateSensor": {},
+    "DeviceIdentificationSensor": {
+      "intervalListCheck": 86400,
+      "interval": 3600
+    },
+    "IPv6DiscoverySensor": {},
+    "NetworkMonitorSensor": {
+      "GLOBAL": {
+        "clean": {
+          "processInterval": 300,
+          "expirePeriod": 86400
+        }
+      },
+      "MY_GATEWAYS": {
+        "ping": {
+          "sampleTick": 1,
+          "sampleCount": 20,
+          "sampleInterval": 300,
+          "minSampleRounds": 30,
+          "alarmDelayRTT": 600,
+          "alarmDelayLossrate": 60,
+          "lossrateLimit": 0.5,
+          "tValue": 2.576,
+          "processInterval": 3600,
+          "expirePeriod": 86400
+        }
+      }
+    },
+    "NetworkStatsSensor": {
+      "internetTestHosts": [
+        "google.com",
+        "github.com",
+        "firewalla.encipher.io"
+      ],
+      "dnsServers": [
+        "1.1.1.1",
+        "8.8.8.8"
+      ],
+      "pingServers":[
+        "GATEWAY",
+        "DNSSERVER",
+        "8.8.8.8",
+        "1.1.1.1"
+      ],
+      "pingFailureThreshold": 2,
+      "interval": 5,
+      "expire": 86400,
+      "sampleInterval": 900,
+      "sampleDuration": 10,
+      "processInterval": 900,
+      "expirePeriod": 604800
+    },
+    "ICMP6Sensor": {},
+    "ARPSensor": {},
+    "CPUSensor": {
+      "interval": 60,
+      "reportInterval": 7200,
+      "temperatureThreshold": 95
+    },
+    "OldDataCleanSensor": {
+      "alarm": {
+        "expires": 2592000,
+        "count": 1000
+      },
+      "monitor": {
+        "expires": 28800,
+        "count": 100
+      },
+      "neighbor": {
+        "expires": 604800,
+        "count": 1000
+      },
+      "notice": {
+        "expires": 604800,
+        "count": 10000
+      },
+      "intel": {
+        "expires": 604800,
+        "count": 10000
+      },
+      "dns": {
+        "expires": 86400,
+        "count": 100
+      },
+      "http": {
+        "expires": 1800,
+        "count": 10000
+      },
+      "ssl": {
+        "expires": 43200,
+        "count": 10000
+      },
+      "conn": {
+        "expires": 86400,
+        "count": 10000
+      },
+      "flowDNS": {
+        "expires": 86400,
+        "count": 10000
+      },
+      "flowLocal": {
+        "expires": 86400,
+        "count": 5000
+      },
+      "auditDrop": {
+        "expires": 86400,
+        "count": 10000
+      },
+      "auditAccept": {
+        "expires": 3600,
+        "count": 1000
+      },
+      "ssh": {
+        "expires": 86400,
+        "count": 10000
+      },
+      "x509": {
+        "expires": 600,
+        "count": 10000
+      },
+      "knownHosts": {
+        "expires": 3600,
+        "count": 10000
+      },
+      "userAgent": {
+        "expires": 2592000,
+        "count": 10000
+      },
+      "sumflow": {
+        "expires": -1,
+        "count": 200
+      },
+      "syssumflow": {
+        "expires": -1,
+        "count": 200
+      },
+      "categoryflow": {
+        "expires": 86400,
+        "count": 200
+      },
+      "appflow": {
+        "expires": 86400,
+        "count": 200
+      },
+      "safe_urls": {
+        "expires": 604800,
+        "count": 1000
+      },
+      "perf": {
+        "expires": 86400,
+        "count": 10000
+      },
+      "networkConfigHistory": {
+        "expires": -1,
+        "count": 32
+      },
+      "internetSpeedtest": {
+        "expires": 2592000,
+        "count": 64
+      },
+      "dhclientRecord": {
+        "expires": 604800,
+        "count": 256
+      },
+      "acl_audit": {
+        "expires": 1800,
+        "count": 4000
+      },
+      "dns_proxy": {
+        "expires": 3600,
+        "count": 10000
+      },
+      "digitalfence": {
+        "expires": 3600
+      },
+      "action_history":{
+        "expires": 2592000,
+        "count": 10000
+      },
+      "cpu_usage": {
+        "expires": 86400,
+        "count": 4000
+      },
+      "device_flow_ts": {
+        "expires": 172800
+      },
+      "user_agent2": {
+        "expires": 2592000,
+        "count": 100
+      },
+      "dm": {
+        "expires": 86400,
+        "count": 3600
+      }
+    },
+    "DeviceOfflineSensor": {
+      "interval": 60,
+      "idle": 2700
+    },
+    "IPChangeSensor": {},
+    "DnsLoopAvoidanceSensor": {},
+    "DataMigrationSensor": {
+      "migrationCodeNames": [
+        "clairvoyant",
+        "bipartite_graph"
+      ]
+    },
+    "FlowCompressionSensor": {
+      "maxCount": 10000,
+      "maxMem": 20971520
+    },
+    "DataUsageSensor": {
+      "refreshInterval": 15,
+      "ratio": 1.2,
+      "percentage": 0.8,
+      "analytics_hours": 8,
+      "smWindow": 2,
+      "mdWindow": 8,
+      "topXflows": 10,
+      "minsize": 150000000,
+      "dataPlanMinPercentage": 0.8
+    },
+    "DHCPServerSensor": {
+      "interval": 600,
+      "firstScan": 120
+    },
+    "DnsmasqDhcpSensor": {},
+    "RuleCheckSensor": {},
+    "SystemDNSSensor": {},
+    "LocalDomainSensor": {},
+    "ClashPlugin": {},
+    "LogScanSensor": {
+      "fireResetBluetooth": true,
+      "bonelogInterval": 900
+    },
+    "NseScanPlugin": {},
+    "ACLAuditLogPlugin": {
+      "buffer": 2,
+      "interval": 900,
+      "expires": 86400
+    },
+    "ACLAlarmLogPlugin": {},
+    "WireGuardPlugin": {},
+    "NewDeviceTagSensor": {},
+    "DockerSensor": {},
+    "EventSensor": {
+      "eventsLimit": 10000,
+      "eventsExpire": 604800,
+      "latestStateEventsExpire": 2592000,
+      "intervals": {
+        "cleanEventsByTime": 3600,
+        "cleanEventsByCount": 300,
+        "pingGateway": 300,
+        "digDNS": 300,
+        "disk_space.sh": 300,
+        "ethernet_state.sh": -1,
+        "service_status.sh": -1,
+        "speed_test.sh": -1,
+        "system_load.sh": 300,
+        "default": 3600
+      }
+    },
+    "DNSProxyPlugin": {
+      "data": [
+        {
+          "prefix": "data",
+          "count": 100000,
+          "error": 0.0001
+        },
+        {
+          "prefix": "new",
+          "count": 1000,
+          "error": 0.0001
+        }
+      ]
+    },
+    "FastIntelPlugin": {
+      "baseURL": "127.0.0.1:9964",
+      "data": [
+        {
+          "prefix": "intel_data",
+          "count": 5000000,
+          "error": 0.001
+        },
+        {
+          "prefix": "intel_new",
+          "count": 20000,
+          "error": 0.001
+        }
+      ]
+    },
+    "CountryIntelPlugin": {},
+    "DeviceSTPSensor": {},
+    "FanSensor": {},
+    "LEDSensor": {},
+    "SyslogSensor": {},
+    "InternalScanSensor": { "skip_verify": false, "strict_http": true,  "mysql8": true},
+    "InternetSpeedtestPlugin": {
+      "vendorCandidates": [
+        "ookla"
+      ],
+      "switchRatioThreshold": 0.88
+    },
+    "PcapZeekPlugin": {},
+    "PcapSuricataPlugin": {},
+    "ZeekDPISensor": {},
+    "CategoryExaminerPlugin": {},
+    "RuleStatsPlugin": {},
+    "SystemRebootSensor": {},
+    "ClashDNSPlugin": {},
+    "AppTimeUsageSensor": {
+      "appConfs": {
+        "youtube": {
+          "category": "av",
+          "includedDomains": [
+            {
+              "domain": "*.googlevideo.com",
+              "occupyMins": 1,
+              "lingerMins": 1,
+              "minsThreshold": 2,
+              "bytesThreshold": 1000000
+            }
+          ],
+          "excludedDomains": [
+            "redirector.googlevideo.com"
+          ]
+        },
+        "netflix": {
+          "category": "av",
+          "includedDomains": [
+            {
+              "domain": "*.nflxvideo.net",
+              "occupyMins": 1,
+              "lingerMins": 1,
+              "minsThreshold": 3,
+              "bytesThreshold": 1000000
+            }
+          ]
+        }
+      }
+    },
+    "APFeaturesPlugin": {},
+    "APCMsgSensor": {},
+    "NicCalibrationSensor": {},
+    "NicStateSensor": {},
+    "DeviceMonitorSensor": {}
+  },
+  "hooks": {
+    "NewDeviceHook": {},
+    "RefreshMacBackupNameHook": {},
+    "DeviceHook": {
+      "hostExpirationSecs": 2700
+    },
+    "DestIPFoundHook": {
+      "maxLucky": 250
+    },
+    "DestURLFoundHook": {},
+    "VPNHook": {}
+  },
+  "bro": {
+    "notice": {
+      "monitor": {},
+      "ignore": {
+        "SSL::Invalid_Server_Cert": "ignore",
+        "PacketFilter::Dropped_Packets": "ignore",
+        "Scan::Address_Scan": "ignore",
+        "Traceroute::Detected": "ignore",
+        "Weird::Activity": "ignore",
+        "HTTP::SQL_Injection_Victim": "ignore",
+        "HTTP::SQL_Injection_Attacker": "ignore"
+      },
+      "path": "/blog/current/notice.log",
+      "expires": 604800
+    },
+    "intel": {
+      "path": "/blog/current/intel.log",
+      "expires": 604800,
+      "ignore": {
+        "none": "ignore"
+      }
+    },
+    "dns": {
+      "path": "/blog/current/dns.log",
+      "flowstashExpires": 900,
+      "expires": 86400
+    },
+    "http": {
+      "path": "/blog/current/http.log",
+      "expires": 1800
+    },
+    "ssl": {
+      "path": "/blog/current/ssl.log",
+      "expires": 43200
+    },
+    "conn": {
+      "path": "/blog/current/conn.log",
+      "pathdev": "/blog/current/conndev.log",
+      "flowstashExpires": 900,
+      "expires": 86400
+    },
+    "connLong": {
+      "path": "/blog/current/conn_long.log",
+      "expires": 600
+    },
+    "ssh": {
+      "path": "/blog/current/ssh.log",
+      "expires": 86400
+    },
+    "x509": {
+      "path": "/blog/current/x509.log",
+      "expires": 600
+    },
+    "knownHosts": {
+      "path": "/blog/current/known_hosts.log",
+      "expires": 3600
+    },
+    "signature": {
+      "path": "/blog/current/signatures.log"
+    },
+    "userAgent": {
+      "expires": 2592000
+    },
+    "activityUserAgent": {
+      "expires": 14400
+    },
+    "threshold": {
+      "maxSpeed": 100000000,
+      "missedBytesRatio": 0.98,
+      "IPTCPRatio": 0.1,
+      "tcpZeroBytesResp": 1000000,
+      "tcpZeroBytesOrig": 1000000,
+      "logLargeBytesResp": 100000000,
+      "logLargeBytesOrig": 100000000
+    }
+  },
+  "features": {
+    "intel:feedback": true,
+    "fast_speedtest": true,
+    "conntrack": {
+      "enabled": true
+    }
+  },
+  "category": {
+    "exclude": [
+      "ad",
+      "search-portal",
+      "technology",
+      "x"
+    ]
+  },
+  "app": {
+    "exclude": []
+  },
+  "userFeatures": {
+    "porn": true,
+    "video": true,
+    "game": true,
+    "vpn": false,
+    "large_upload": true,
+    "large_upload_2": false,
+    "abnormal_bandwidth_usage": true,
+    "data_plan": true,
+    "data_plan_alarm": true,
+    "new_device": true,
+    "new_device_block": false,
+    "device_online": true,
+    "device_offline": true,
+    "alarm_upnp": true,
+    "alarm_subnet": true,
+    "spoofing_device": false,
+    "vpn_client_connection": true,
+    "cyber_security": true,
+    "cyber_security.autoBlock": true,
+    "cyber_security.autoUnblock": true,
+    "vulnerability": false,
+    "naughty_monkey": false,
+    "redirect_httpd": false,
+    "ntp_redirect": false,
+    "api_relay": false,
+    "vpn_relay": false,
+    "upstream_dns": false,
+    "insane_mode": false,
+    "doh": false,
+    "safe_search": false,
+    "network_stats": false,
+    "link_stats": true,
+    "network_speed_test": false,
+    "vpn_restore": true,
+    "vpn_disconnect": true,
+    "local_domain": true,
+    "external_scan": false,
+    "alarm_openport": false,
+    "device_service_scan": true,
+    "device_detect": true,
+    "wireguard": false,
+    "ipv6": false,
+    "adblock": false,
+    "family_protect": false,
+    "internal_scan": true,
+    "acl_audit": true,
+    "acl_alarm": true,
+    "new_device_tag": false,
+    "dual_wan": true,
+    "clash": false,
+    "single_wan_conn_check": false,
+    "accounting": false,
+    "event_collect": true,
+    "network_metrics": true,
+    "network_monitor": false,
+    "dns_proxy": false,
+    "fast_intel": true,
+    "country": true,
+    "dnsmasq_log_allow": true,
+    "dnsmasq_log_allow_redis": false,
+    "dns_flow": true,
+    "digitalfence": false,
+    "compress_flows": false,
+    "rekey": false,
+    "pcap_zeek": true,
+    "pcap_suricata": false,
+    "local_flow": false,
+    "category_filter": true,
+    "rule_stats": true,
+    "unbound": false,
+    "sys_patch": true,
+    "clashdns": false,
+    "mesh_vpn": false,
+    "app_time_usage": true
+  },
+  "hiddenFeatures": [
+    "naughty_monkey"
+  ],
+  "pubKeys": [],
+  "firerouter": {
+    "interface": {
+      "host": "127.0.0.1",
+      "port": 8837,
+      "version": "v1"
+    },
+    "homeFolder": "/firerouter",
+    "hiddenFolder": "/.router"
+  },
+  "fwapc": {
+    "interface": {
+      "host": "127.0.0.1",
+      "port": 8841,
+      "version": "v1"
+    }
+  },
+  "profiles": {
+    "alarm": {
+      "default":{
+        "video": { "duMin": 60, "rbMin": 5000000, "ctMin": 10, "cooldown": 900 },
+        "porn": { "duMin": 20, "rbMin": 1000000, "ctMin": 3, "cooldown": 900 },
+        "game": { "duMin": 3, "rbMin": 30000, "ctMin": 5, "cooldown": 900 },
+        "vpn": { "duMin": 120, "rbMin": 10000, "ctMin": 3, "cooldown": 900 },
+        "large_upload": { "txInMin": 1000000, "txOutMin": 500000, "sdMin": 8, "ratioMin": 1, "ratioSingleDestMin": 1.5, "rankedMax": 3, "cooldown": 14400 },
+        "large_upload_2": { "txMin": 100000000, "cooldown": 14400 }
+      }
+    }
+  },
+  "alarms": {
+    "apply": {
+      "default": {"state": "ready"}
+    }
+  },
+  "cloudcache": {
+    "expirationDays": 30
+  },
+  "pairedDeviceMaxHistory": 100
+}

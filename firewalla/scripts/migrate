@@ -1,0 +1,10 @@
+cd /home/pi/firewalla/etc/
+sudo cp brofish.service /etc/systemd/system/.
+sudo cp firewalla.service /etc/systemd/system/.
+sudo systemctl daemon-reload
+sudo systemctl disable fishbowl
+sudo systemctl enable brofish
+sudo systemctl enable firewalla
+
+mv /home/pi/fishbowl/node_modules /home/pi/firewalla/.
+redis-cli KEYS "dns*" |xargs redis-cli DEL

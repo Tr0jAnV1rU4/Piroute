@@ -1,0 +1,15 @@
+client
+dev tun
+proto PROTO
+remote PUBLIC_IP EXTERNAL_PORT
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+#compress
+remote-cert-tls server
+mute-replay-warnings
+key-direction 1
+cipher AES-128-CBC
+verb 1
+mute 20

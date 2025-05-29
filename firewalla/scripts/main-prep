@@ -1,0 +1,37 @@
+#!/bin/bash -
+#
+#    Copyright 2017 Firewalla LLC
+#
+#    This program is free software: you can redistribute it and/or  modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+# Prepare Firewalla before run
+#
+#
+
+logger "FIREWALLA.MAIN-PREP.START"
+
+: ${FIREWALLA_HOME:=/home/pi/firewalla}
+
+source ${FIREWALLA_HOME}/platform/platform.sh
+
+for prep_script in $(ls ${FIREWALLA_HOME}/scripts/prep/*.sh)
+do
+    bash $prep_script
+done
+
+for prep_script in $(ls ${FW_PLATFORM_CUR_DIR}/hooks/before_main_run/*.sh 2>/dev/null)
+do
+    bash $prep_script
+done

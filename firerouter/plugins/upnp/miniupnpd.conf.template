@@ -1,0 +1,35 @@
+# WAN network interface
+ext_ifname=%EXTERNAL_INTERFACE%
+
+%LISTENING_IP%
+
+minissdpdsocket=/var/run/minissdpd.%INTERNAL_INTERFACE%.sock
+
+enable_natpmp=%ENABLE_NATPMP%
+enable_upnp=%ENABLE_UPNP%
+
+upnp_nat_chain=UPNP_%INTERNAL_INTERFACE%
+upnp_forward_chain=UPNP_%INTERNAL_INTERFACE%
+upnp_nat_postrouting_chain=UPNP_PR_%INTERNAL_INTERFACE%
+
+lease_file=/var/run/upnp.%INTERNAL_INTERFACE%.leases
+
+friendly_name=%MODEL_NAME%
+manufacturer_name=Firewalla
+manufacturer_url=https://firewalla.com
+model_name=%MODEL_NAME%
+model_description=%MODEL_NAME%
+model_url=https://firewalla.com
+
+secure_mode=yes
+
+clean_ruleset_threshold=20
+clean_ruleset_interval=600
+
+uuid=%UUID%
+
+deny 1194 0.0.0.0/0 0-65535
+deny 8833-8834 0.0.0.0/0 0-65535
+deny 8837 0.0.0.0/0 0-65535
+%ALLOW_NETWORK%
+deny 0-65535 0.0.0.0/0 0-65535

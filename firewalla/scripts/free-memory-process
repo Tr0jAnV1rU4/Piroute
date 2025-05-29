@@ -1,0 +1,66 @@
+#!/bin/bash -
+
+: ${FIREWALLA_HOME:=/home/pi/firewalla}
+source ${FIREWALLA_HOME}/platform/platform.sh
+
+# add default value
+: ${MIN_FREE_MEMORY:=70}
+: ${SAFE_MIN_FREE_MEMORY:=90}
+: ${REBOOT_FREE_MEMORY:=40}
+: ${FIREMAIN_MAX_MEMORY:=280000}
+: ${FIREMON_MAX_MEMORY:=240000}
+: ${FIREAPI_MAX_MEMORY:=200000}
+: ${MAX_NUM_OF_PROCESSES:=4000}
+: ${MAX_NUM_OF_THREADS:=20000}
+
+firemon_pid=$(pidof FireMon)
+firemain_pid=$(pidof FireMain)
+firemon_mem2=$(pidof FireMon | xargs ps -o rss | awk 'FNR==2 {print $1}')
+fireapi_mem2=$(pidof FireApi | xargs ps -o rss | awk 'FNR==2 {print $1}')
+firemain_mem2=$(pidof FireMain | xargs ps -o rss | awk 'FNR==2 {print $1}')
+redis_mem2=$(pidof redis-server | xargs ps -o rss | awk 'FNR==2 {print $1}')
+bitbridge7_mem2=$(pidof bitbridge7 | xargs ps -o rss | awk 'FNR==2 {print $1}')
+bitbridge6_mem2=$(pidof bitbridge6 | xargs ps -o rss | awk 'FNR==2 {print $1}')
+NOP=`ps -ef |wc -l`
+NOT=`ps -aHx | wc -l`
+firemain_NOF=`ls -l /proc/$firemain_pid/fd | wc -l`
+firemon_NOF=`ls -l /proc/$firemon_pid/fd | wc -l`
+NOF=`cat /proc/sys/fs/file-nr`
+firemon_threads=$( ps -o nlwp -h $firemon_pid)
+firemain_threads=$( ps -o nlwp -h $firemain_pid)
+branch=$(cd /home/pi/firewalla; git rev-parse --abbrev-ref HEAD)
+devNotify=$(redis-cli hget sys:config devNotify)
+TEMP=$(( $(cat /sys/class/thermal/thermal_zone0/temp) / 1000 ))
+
+/home/pi/firewalla/scripts/firelog -t debug -m "FIREWALLA: Memory mon:$firemon_mem2, api:$fireapi_mem2, main:$firemain_mem2,redis:$redis_mem2,b7:$bitbridge7_mem2,b6:$bitbridge6_mem2,proc:$NOP, thread:$NOT main_thread:$firemain_threads mon_threads:$firemon_threads mainfile:$firemain_NOF monfile:$firemon_NOF sys:$NOF temp:$TEMP"
+#free -m | logger
+
+if (( firemain_mem2 >= ${FIREMAIN_MAX_MEMORY})); then
+  /home/pi/firewalla/scripts/firelog -t cloud -m "FIREWALLA: FireMain Critical Memory Restart2"+$firemain_mem2
+  sudo service firemain restart
+  if [[ $branch == "master" && "x${devNotify}" == "x1" ]]; then
+    redis-cli publish 'APP:NOTIFY' '{"title": "FireMain Restarted", "body": "FireMain restarted due to used memory is over 140MB"}'
+  fi
+fi
+
+if (( firemon_mem2 >= ${FIREMON_MAX_MEMORY})); then
+  /home/pi/firewalla/scripts/firelog -t cloud -m "FIREWALLA: Firemon Critical Memory Restart2"+$firemon_mem2
+  sudo service firemon restart
+  if [[ $branch == "master" && "x${devNotify}" == "x1" ]]; then
+    redis-cli publish 'APP:NOTIFY' '{"title": "FireMon Restarted", "body": "FireMon restarted due to used memory is over 120MB"}'
+  fi
+fi
+
+(( fireapi_mem2 >= $FIREAPI_MAX_MEMORY )) && /home/pi/firewalla/scripts/firelog -t cloud -m "FIREWALLA: FireApi Critical Memory Restart2"+$fireapi_mem2
+(( fireapi_mem2 >= $FIREAPI_MAX_MEMORY )) && ( touch /home/pi/.firewalla/managed_reboot; sudo service fireapi restart )
+
+if [[ $NOP -gt $MAX_NUM_OF_PROCESSES ]]; then
+   /home/pi/firewalla/scripts/firelog -t cloud -m "FIREWALLA: PROCESS > $MAX_NUM_OF_PROCESSES REBOOT $NOP"
+   /home/pi/firewalla/scripts/fire-rebootf
+fi
+
+if [[ $NOT -gt $MAX_NUM_OF_THREADS ]]; then
+   /home/pi/firewalla/scripts/firelog -t cloud -m "FIREWALLA: THREADS > $MAX_NUM_OF_THREADS REBOOT $NOT"
+   /home/pi/firewalla/scripts/fire-rebootf
+fi
+

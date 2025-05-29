@@ -1,0 +1,2 @@
+#!/bin/sh
+/sbin/ifconfig INTF IP_ADDRESS up

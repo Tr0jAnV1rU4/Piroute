@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# parameters: interface-name tty-device speed local-IP-address remote-IP-address ipparam
+source /home/pi/firerouter/platform/platform.sh
+INTF=$1
+LOCAL_IP=$4
+PEER_IP=$5
+
+LOCAL_RT_TABLE="${INTF}_local"
+DEFAULT_RT_TABLE="${INTF}_default"
+
+sudo ip r add $LOCAL_IP dev $INTF table $LOCAL_RT_TABLE
+sudo ip r add $LOCAL_IP dev $INTF table $DEFAULT_RT_TABLE
+sudo ip r add default via $PEER_IP dev $INTF table $DEFAULT_RT_TABLE
+
+echo "nameserver $DNS1" > /etc/ppp/$INTF.resolv.conf
+if [[ -n "$DNS2" ]]; then
+  echo "nameserver $DNS2" >> /etc/ppp/$INTF.resolv.conf
+fi
+
+# lossen reverse path filtering settings on pppoe interface
+sudo sysctl -w net.ipv4.conf.$INTF.rp_filter=2
+
+RPS_CPUS=$(get_pppoe_rps_cpus)
+
+if [[ -z $RPS_CPUS ]]; then
+  RPS_CPUS="f"
+fi
+
+# adjust receive packet steering on pppoe interface
+sudo bash -c "echo ${RPS_CPUS} > /sys/class/net/${INTF}/queues/rx-0/rps_cpus" || true
+sudo ethtool -K ${INTF} rx-udp-gro-forwarding on || true
+
+redis-cli -n 1 publish "pppoe.ip_change" "$INTF"

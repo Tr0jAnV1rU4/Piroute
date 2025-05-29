@@ -1,0 +1,14 @@
+[Unit]
+Description=Firewalla FRP Service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+User=pi
+Restart=always
+WorkingDirectory=/home/pi/firewalla/extension/frp
+ExecStart=FRPC_COMMAND -c FRPC_CONF
+
+[Install]
+WantedBy=multi-user.target
+

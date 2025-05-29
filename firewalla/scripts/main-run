@@ -1,0 +1,147 @@
+#!/bin/bash -
+#
+#    Copyright 2017-2023 Firewalla Inc.
+#
+#    This program is free software: you can redistribute it and/or  modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+# Ensure network is stable first then launch main-start
+#
+#
+
+logger "FIREWALLA:MAIN-RUN:START"
+
+: ${FIREWALLA_HOME:=/home/pi/firewalla}
+: ${FIREWALLA_HIDDEN:=/home/pi/.firewalla}
+
+source ${FIREWALLA_HOME}/platform/platform.sh
+
+sync_hosts() {
+    hostname=`cat /etc/hostname`
+    # should contain 127.0.0.1 <hostname>
+    cat /etc/hosts | grep -e "^127.0.0.1" | grep -e "$hostname" -q
+    if [[ $? -ne 0 ]]; then
+        sudo sed -i s/"^127.0.0.1"/"127.0.0.1  $hostname"/g /etc/hosts
+    fi
+    # should contain ::1 <hostname>
+    cat /etc/hosts | grep -e "^::1" | grep -e "$hostname" -q
+    if  [[ $? -ne 0 ]]; then
+        sudo sed -i s/"^::1"/"::1  $hostname"/g /etc/hosts
+    fi
+}
+
+sync_hosts
+
+heartbeatLED
+
+# remove overlay backup files
+sudo rm -rf /media/root-rw/overlay.bak /media/root-rw/overlay-workdir.bak
+sudo rm -rf /media/home-rw/overlay.bak /media/home-rw/overlay-work.bak
+
+# ensure that run directory already exists
+mkdir -p /home/pi/.firewalla/run
+
+# resize last partitions if necessary
+# sudo $FIREWALLA_HOME/scripts/init_resize.sh
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+sudo $FIREWALLA_HOME/scripts/check_reset.sh
+
+# Enable zram to increase memory
+logger "FIREWALLA:MAIN-RUN:FIREZRAM"
+sudo ${FIREWALLA_HOME}/scripts/sbin/setup_zram.sh
+# Flush iptables & ip6tables before any network involved work
+logger "FIREWALLA:MAIN-RUN:FLUSH_IPTABLES"
+sudo $FIREWALLA_HOME/scripts/flush_iptables.sh
+logger "FIREWALLA:MAIN-RUN:CHECK_FIX_NETWORK"
+sudo $FIREWALLA_HOME/scripts/check_fix_network.sh
+#logger "Broadcast booting"
+logger "FIREWALLA:MAIN-RUN:FIRETIME:START "+`date`
+
+# remove old runtime-generated crontab, the latest crontab files will be regenerated in runtime again
+sudo rm -f $FIREWALLA_HIDDEN/config/crontab/*
+$FIREWALLA_HOME/scripts/update_crontab.sh
+
+fire_time_out=$($FIREWALLA_HOME/scripts/fire-time.sh)
+logger "FIREWALLA:MAIN-RUN:FIRETIME:END"+"set time to $fire_time_out"
+
+# prepare Firewalla run time environment
+logger "FIREWALLA:MAIN-RUN:PREP"
+sudo $FIREWALLA_HOME/scripts/main-prep
+
+PRE_MAIN_D="/home/pi/.firewalla/config/pre_main.d"
+
+if [[ -d $PRE_MAIN_D ]]; then
+  for pre_script in $(ls $PRE_MAIN_D/*.sh)
+  do
+      bash $pre_script
+  done
+fi
+
+logger "FIREWALLA:MAIN-RUN:MAIN-START"
+redis-cli del sys:upgrade >/dev/null
+redis-cli publish FIREWALLA:HEARTBEAT:UPDATE '{"invoked-by":"firewalla"}' >/dev/null
+ASSETSD_PATH=$FIREWALLA_HIDDEN/config/assets.fwapc timeout 90 $FIREWALLA_HOME/scripts/update_assets.sh > /tmp/fwapcupgrade.log
+$FIREWALLA_HOME/scripts/main-start
+
+# cleanup overlay backups from a previous reset
+# should be safe at current stage of boot
+sudo rm -rf /media/root-rw/overlay.bak /media/root-rw/overlay-workdir.bak
+sudo rm -rf /media/home-rw/overlay.bak /media/home-rw/overlay-work.bak
+
+if [ -e /home/pi/.firewalla/config/disable_watchdog ]; then
+    sudo service watchdog stop
+    logger "FIREWALLA:WATCHDOG:DISABLED"
+else
+    # this will touch and init watchdog
+    $FIREWALLA_HOME/scripts/fire-ping.sh
+    sleep 1
+    $FIREWALLA_HOME/scripts/fire-ping.sh
+    echo "Launching WatchDog"
+    sleep 1
+    $FIREWALLA_HOME/scripts/fire-ping.sh
+    sudo service watchdog stop
+    echo "WatchDog Stopped"
+    $FIREWALLA_HOME/scripts/fire-ping.sh
+    sleep 3
+
+    if [[ $MANAGED_BY_FIREROUTER != "yes" ]]; then
+      sudo service watchdog start
+      echo "WatchDog Started"
+      logger "FIREWALLA:WATCHDOG:ENABLED"
+    fi
+fi
+
+if [[ -n "$NO_FIREKICK_RESTART" ]]; then
+  # turn off led light since pairing is not activated
+  turnOffLED
+fi
+
+logger "FIREWALLA:MAIN-RUN:POST_MAIN_D"
+
+POST_MAIN_D="/home/pi/.firewalla/config/post_main.d"
+
+if [[ -d $POST_MAIN_D ]]; then
+  for post_script in $(ls $POST_MAIN_D/*.sh)
+  do
+      bash $post_script
+  done
+fi
+
+sudo $FIREWALLA_HOME/scripts/apply_profile.sh -f &> /tmp/apply_profile-main-run.log
+timeout 1200 $FIREWALLA_HOME/scripts/update_assets.sh &>/dev/null
+
+logger "FIREWALLA:MAIN-RUN:DONE"

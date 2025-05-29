@@ -1,0 +1,12 @@
+[Unit]
+Description=Firewalla OpenVPN Client Service using profile %i
+After=network.target
+
+[Service]
+Restart=always
+RestartSec=3
+ExecStart=/home/pi/firewalla/extension/vpnclient/service_start.sh %i
+
+[Install]
+WantedBy=multi-user.target
+

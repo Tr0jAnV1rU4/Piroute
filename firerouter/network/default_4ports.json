@@ -1,0 +1,163 @@
+{
+  "interface": {
+    "phy": {
+      "eth0": {
+        "enabled": true
+      },
+      "eth1": {
+        "enabled": true
+      },
+      "eth2": {
+        "meta": {
+          "type": "wan"
+        },
+        "enabled": true,
+        "ipv4": "192.168.1.111/24",
+        "gateway": "192.168.1.2",
+        "nameservers": [
+          "114.114.114.114",
+          "8.8.8.8"
+        ]
+      },
+      "eth3": {
+        "meta": {
+          "type": "wan"
+        },
+        "enabled": true,
+        "dhcp": true
+      }
+    },
+    "vlan": {
+      "eth0.100": {
+        "enabled": true,
+        "vid": 100,
+        "intf": "eth0"
+      },
+      "eth1.100": {
+        "enabled": true,
+        "vid": 100,
+        "intf": "eth1"
+      }
+    },
+    "bridge": {
+      "br0": {
+        "meta": {
+          "type": "lan"
+        },
+        "ipv4": "10.10.0.1/24",
+        "intf": [
+          "eth0"
+        ],
+        "enabled": true
+      },
+      "br1": {
+        "meta": {
+          "type": "lan"
+        },
+        "ipv4": "10.0.1.1/24",
+        "intf": [
+          "eth1"
+        ],
+        "enabled": true
+      },
+      "vbr100": {
+        "meta": {
+          "type": "lan"
+        },
+        "ipv4": "10.100.0.1/24",
+        "intf": [
+          "eth0.100",
+          "eth1.100"
+        ],
+        "enabled": true,
+        "isolated": true
+      }
+    }
+  },
+  "routing": {
+    "global": {
+      "default": {
+        "viaIntf": "eth3"
+      }
+    },
+    "br1": {
+      "default": {
+        "viaIntf": "eth2"
+      }
+    }
+  },
+  "dns": {
+    "default": {
+      "nameservers": [
+        "114.114.114.114",
+        "1.1.1.1"
+      ]
+    },
+    "br0": {
+      "useNameserversFromWAN": true
+    },
+    "br1": {
+      "useNameserversFromWAN": true
+    },
+    "vbr100": {
+      "useNameserversFromWAN": true
+    }
+  },
+  "nat": {
+    "br0_eth3": {
+      "in": "br0",
+      "out": "eth3"
+    },
+    "br1_eth2": {
+      "in": "br1",
+      "out": "eth2"
+    },
+    "vbr100_eth3": {
+      "in": "vbr100",
+      "out": "eth3"
+    }
+  },
+  "dhcp": {
+    "br0": {
+      "gateway": "10.10.0.1",
+      "subnetMask": "255.255.255.0",
+      "nameservers": [
+        "10.10.0.1"
+      ],
+      "searchDomain": [
+        ".lan"
+      ],
+      "range": {
+        "from": "10.10.0.10",
+        "to": "10.10.0.250"
+      },
+      "lease": 86400
+    },
+    "vbr100": {
+      "gateway": "10.100.0.1",
+      "subnetMask": "255.255.255.0",
+      "nameservers": [
+        "10.100.0.1"
+      ],
+      "searchDomain": [
+        ".lan100"
+      ],
+      "range": {
+        "from": "10.100.0.10",
+        "to": "10.100.0.250"
+      },
+      "lease": 86400
+    }
+  },
+  "sshd": {
+    "br0": {
+      "enabled": true
+    },
+    "br1": {
+      "enabled": true
+    },
+    "vbr100": {
+      "enabled": false
+    }
+  }
+}

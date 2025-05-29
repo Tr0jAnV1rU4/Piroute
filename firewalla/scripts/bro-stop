@@ -1,0 +1,7 @@
+#!/bin/bash
+
+: ${FIREWALLA_HOME:=/home/pi/firewalla}
+source ${FIREWALLA_HOME}/platform/platform.sh
+
+# kill -9 will terminate bro/zeek process without letting them generate logs for ongoing connections
+sudo pkill -x $BRO_PROC_NAME
